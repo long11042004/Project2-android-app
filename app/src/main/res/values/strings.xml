@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">Bộ điều khiển Tưới cây</string>
+    <string name="dashboard_title">Bảng điều khiển Tưới cây</string>
+
+    <string name="temperature">Nhiệt độ</string>
+    <string name="temperature_format">%.1f°C</string>
+    <string name="temperature_default">Nhiệt độ: --°C</string>
+
+    <string name="air_humidity">Độ ẩm không khí</string>
+    <string name="air_humidity_format">%d%%</string>
+    <string name="air_humidity_default">Độ ẩm không khí: --%</string>
+
+    <string name="soil_moisture">Độ ẩm đất</string>
+    <string name="soil_moisture_format">Độ ẩm đất: %1$d%%</string>
+    <string name="soil_moisture_default">Độ ẩm đất: --%</string>
+
+    <string name="pump">Máy bơm</string>
+    <string name="switch_off">TẮT</string>
+    <string name="switch_on">BẬT</string>
+    <string name="pump_turned_on">Đã bật máy bơm</string>
+    <string name="pump_turned_off">Đã tắt máy bơm</string>
+    <string name="pump_status_running">Trạng thái máy bơm: Đang chạy</string>
+    <string name="pump_status_off">Trạng thái máy bơm: Đã tắt</string>
+    <string name="pump_status_unknown">Trạng thái: Chưa rõ</string>
+</resources>
