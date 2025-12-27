@@ -146,6 +146,9 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
                     textViewPumpStatus.setText(message); // Hiển thị chi tiết (VD: THU CONG: DA TAT)
                 }
 
+                // Lưu lịch sử trạng thái máy bơm
+                PumpDataRepository.getInstance(getApplication()).updatePumpStatus(message);
+
             }
         });
     }

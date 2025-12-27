@@ -25,6 +25,7 @@
     <string name="pump_status_label">Trạng thái máy bơm</string>
     <string name="status_updating">Đang cập nhật...</string>
     <string name="mode_auto">Chế độ Tự động (AUTO)</string>
+    <string name="mode_manual">Bật/Tắt (ON/OFF)</string>
     <string name="action_on">Bật (ON)</string>
     <string name="action_off">Tắt (OFF)</string>
     <string name="view_detail">Chi tiết</string>
@@ -34,4 +35,8 @@
     <string name="stat_max">Max: %s</string>
     <string name="stat_min">Min: %s</string>
     <string name="stat_avg">TB: %s</string>
+    <string name="status_online">Online</string>
+    <string name="status_offline">Offline</string>
+    <string name="control_panel_label">Bảng điều khiển</string>
+    <string name="activity_stats_label">Thống kê hoạt động (24h)</string>
 </resources>

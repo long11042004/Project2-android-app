@@ -8,12 +8,14 @@ import androidx.room.RoomDatabase;
 @Database(entities = {
         MoistureHistoryEntry.class,
         TemperatureHistoryEntry.class,
-        AirHumidityHistoryEntry.class
-}, version = 2, exportSchema = false)
+        AirHumidityHistoryEntry.class,
+        PumpHistoryEntry.class
+}, version = 3, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract MoistureHistoryDao moistureHistoryDao();
     public abstract TemperatureHistoryDao temperatureHistoryDao();
     public abstract AirHumidityHistoryDao airHumidityHistoryDao();
+    public abstract PumpHistoryDao pumpHistoryDao();
 
     private static volatile AppDatabase INSTANCE;
 

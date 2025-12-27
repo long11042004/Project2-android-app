@@ -63,14 +63,20 @@ public class MqttHandler {
     }
 
     public void connect() {
+        connect(null);
+    }
+
+    public void connect(String customClientId) {
         if (client != null && client.getState().isConnectedOrReconnect()) {
             Log.d(TAG, "Client đã kết nối hoặc đang kết nối lại.");
             return;
         }
 
+        String clientId = (customClientId != null) ? customClientId : getOrCreateClientId(context);
+
         client = MqttClient.builder()
                 .useMqttVersion5()
-                .identifier(getOrCreateClientId(context))
+                .identifier(clientId)
                 .serverHost(MQTT_SERVER_HOST)
                 .serverPort(MQTT_SERVER_PORT)
                 .sslWithDefaultConfig() // Bỏ SSL khi dùng broker công khai trên port 1883
