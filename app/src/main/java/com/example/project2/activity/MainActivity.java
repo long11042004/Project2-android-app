@@ -28,6 +28,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
     private String currentTemperatureValue = null;
     private String currentAirHumidityValue = null;
     private String currentSoilMoistureValue = null; // Lưu giá trị độ ẩm thô
+    private String currentPumpStatus = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +47,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
         CardView cardViewTemperature = findViewById(R.id.cardViewTemperature);
         CardView cardViewAirHumidity = findViewById(R.id.cardViewAirHumidity);
         CardView cardViewSoilMoisture = findViewById(R.id.cardViewSoilMoisture);
+        CardView cardViewPump = findViewById(R.id.cardViewPump);
 
         // Vô hiệu hóa switch máy bơm khi khởi động cho đến khi nhận được trạng thái đầu tiên
         switchPump.setEnabled(false);
@@ -94,6 +96,15 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
             }
             startActivity(intent);
         });
+
+        // Xử lý sự kiện nhấn vào ô máy bơm
+        cardViewPump.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, PumpDetailActivity.class);
+            if (currentPumpStatus != null) {
+                intent.putExtra("pump_status", currentPumpStatus);
+            }
+            startActivity(intent);
+        });
     }
 
     @Override
@@ -104,7 +115,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
                 try {
                     currentTemperatureValue = message;
                     float tempValue = Float.parseFloat(message);
-                    String formattedText = getString(R.string.temperature_format, tempValue);
+                    String formattedText = String.format("%.1f°C", tempValue);
                     textViewTemperature.setText(formattedText);
                 } catch (NumberFormatException e) {
                     Log.e("MainActivity", "Invalid temperature value received: " + message, e);
@@ -114,8 +125,8 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
             } else if (topic.equals(MqttHandler.TOPIC_AIR_HUMIDITY)) {
                 try {
                     currentAirHumidityValue = message;
-                    int humidityValue = Integer.parseInt(message);
-                    String formattedText = getString(R.string.air_humidity_format, humidityValue);
+                    float humidityValue = Float.parseFloat(message);
+                    String formattedText = String.format("%.1f%%", humidityValue);
                     textViewAirHumidity.setText(formattedText);
                 } catch (NumberFormatException e) {
                     Log.e("MainActivity", "Invalid air humidity value received: " + message, e);
@@ -126,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
                 try {
                     currentSoilMoistureValue = message; // Lưu giá trị thô
                     int moistureValue = Integer.parseInt(message);
-                    String formattedText = getString(R.string.soil_moisture_format, moistureValue);
+                    String formattedText = String.format("%d%%", moistureValue);
                     textViewSoilMoisture.setText(formattedText);
 
                     // Cập nhật dữ liệu trong Repository để các thành phần khác có thể lắng nghe
@@ -137,6 +148,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
                     textViewSoilMoisture.setText(R.string.soil_moisture_default);
                 }
             } else if (topic.equals(MqttHandler.TOPIC_PUMP_STATUS)) {
+                currentPumpStatus = message; // Lưu lại trạng thái mới nhất
                 // Dựa vào tin nhắn từ esp8266.cpp
                 boolean isPumpOn = "BOM DANG CHAY".equalsIgnoreCase(message);
 

@@ -33,7 +33,7 @@
 
         <activity android:name=".activity.TemperatureDetailActivity" />
         <activity android:name=".activity.AirHumidityDetailActivity" />
-
+        <activity android:name=".activity.PumpDetailActivity" />
 
     </application>
 

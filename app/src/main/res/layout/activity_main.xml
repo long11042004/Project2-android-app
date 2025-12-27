@@ -38,20 +38,28 @@
             android:padding="16dp">
 
             <ImageView
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
                 android:contentDescription="@string/temperature"
-                android:src="@drawable/ic_thermostat"
+                android:src="@drawable/ic_thermometer"
                 app:tint="@color/temperature_red" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/temperature"
+                android:textSize="22sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/textViewTemperature"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:text="@string/temperature_default"
                 android:textAlignment="center"
-                android:textSize="24sp"
+                android:textSize="32sp"
                 android:textStyle="bold"
                 android:textColor="?android:attr/textColorPrimary"/>
         </LinearLayout>
@@ -79,20 +87,28 @@
             android:padding="16dp">
 
             <ImageView
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
                 android:contentDescription="@string/air_humidity"
-                android:src="@drawable/ic_humidity"
+                android:src="@drawable/ic_air"
                 app:tint="@color/air_humidity_blue" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/air_humidity"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/textViewHumidity"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:text="@string/air_humidity_default"
                 android:textAlignment="center"
-                android:textSize="24sp"
+                android:textSize="32sp"
                 android:textStyle="bold"
                 android:textColor="?android:attr/textColorPrimary"/>
         </LinearLayout>
@@ -120,77 +136,86 @@
             android:padding="16dp">
 
             <ImageView
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
                 android:contentDescription="@string/soil_moisture"
-                android:src="@drawable/ic_spa"
+                android:src="@drawable/ic_dirt"
                 app:tint="@color/brown" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/soil_moisture"
+                android:textSize="22sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/textViewSoilMoisture"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:text="@string/soil_moisture_default"
                 android:textAlignment="center"
-                android:textSize="24sp"
+                android:textSize="32sp"
                 android:textStyle="bold"
                 android:textColor="?android:attr/textColorPrimary"/>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
     <!-- CardView for Pump Control -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:clickable="false"
-        android:focusable="false"
-        android:layout_margin="8dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="4dp"
-        app:layout_columnWeight="1"
-        app:layout_rowWeight="1">
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardViewPump"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_margin="8dp"
+            android:clickable="false"
+            android:focusable="false"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:layout_columnWeight="1"
+            app:layout_rowWeight="1">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="16dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <ImageView
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginBottom="8dp"
-                android:contentDescription="@string/pump"
-                android:src="@drawable/ic_pumper"
-                app:tint="?attr/colorPrimary" />
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_marginBottom="8dp"
+                    android:contentDescription="@string/pump"
+                    android:src="@drawable/ic_pumper"
+                    app:tint="@color/mint" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/pump"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/pump"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
 
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchPump"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:textOff="@string/switch_off"
-                android:textOn="@string/switch_on" />
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switchPump"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textOff="@string/switch_off"
+                    android:textOn="@string/switch_on" />
 
-            <TextView
-                android:id="@+id/textViewPumpStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/pump_status_unknown"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+                <TextView
+                    android:id="@+id/textViewPumpStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/pump_status_unknown"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
     </androidx.gridlayout.widget.GridLayout>
 </LinearLayout>

@@ -1,90 +1,83 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include <DHT.h> 
 
-// --------- CẤU HÌNH WIFI ----------
-const char* ssid = "38 Tan Lac";
-const char* password = "0366091667";
+// --------- 1. CẤU HÌNH WIFI & SERVER ---------
+const char* ssid = "38 Tan Lac";       
+const char* password = "0366091667";     
 
-// --------- CẤU HÌNH MQTT (HiveMQ) ----------
 const char* mqtt_server = "1fbec7bb18444301835d103a20af6aea.s1.eu.hivemq.cloud";
-const int mqtt_port = 8883; 
+const int mqtt_port = 8883;
 const char* mqtt_user = "Project2";
 const char* mqtt_pass = "LinhLongKhiemIT2";
 
-// --------- CHỦ ĐỀ MQTT (TOPIC) ----------
-const char* topic_do_am = "vuon/do_am";          // Gửi độ ẩm lên App
-const char* topic_trang_thai = "vuon/may_bom";   // Gửi trạng thái bơm (Đang chạy/Đã tắt)
-const char* topic_lenh = "vuon/may_bom/lenh";    // NHẬN lệnh từ App (Topic mới)
+// --------- 2. CÁC TOPIC MQTT (ĐÃ SỬA CHO KHỚP ANDROID) ---------
+const char* topic_dat = "vuon/do_am";            // [ĐÃ SỬA] Khớp với Android
+const char* topic_trang_thai = "vuon/may_bom";   // [ĐÃ SỬA] Khớp với Android
 
-// --------- KHAI BÁO CHÂN ----------
+const char* topic_nhiet = "vuon/nhiet_do";       // Giữ nguyên
+const char* topic_kk = "vuon/do_am_kk";          // Giữ nguyên
+const char* topic_lenh = "vuon/may_bom/lenh";    // Giữ nguyên
+
+// --------- 3. KHAI BÁO CHÂN ---------
+#define DHTPIN 4      // D2
+#define DHTTYPE DHT22 
+DHT dht(DHTPIN, DHTTYPE);
+
 const int sensorPin = A0; 
 const int relayPin = 5;   // D1
 
-// --------- BIẾN SỐ ----------
-unsigned long lastMsg = 0; 
+// --------- 4. CÀI ĐẶT NGƯỠNG ---------
+int nguongKho = 40;     
+int nguongMua = 90;      
+
+bool cheDoTuDong = true;  
+unsigned long lastMsg = 0;
 
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
 
-// --- 1. HÀM XỬ LÝ KHI NHẬN TIN NHẮN TỪ APP (QUAN TRỌNG) ---
+// --- HÀM XỬ LÝ LỆNH TỪ APP ---
 void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Nhan tin nhan tu topic: ");
-  Serial.print(topic);
-  Serial.print(". Noi dung: ");
-
   String message = "";
-  for (int i = 0; i < length; i++) {
-    message += (char)payload[i];
-  }
-  Serial.println(message);
+  for (int i = 0; i < length; i++) message += (char)payload[i];
+  Serial.print("Lenh nhan duoc: "); Serial.println(message);
 
-  // Kiểm tra nếu đúng là topic lệnh
   if (String(topic) == topic_lenh) {
     if (message == "ON") {
-      digitalWrite(relayPin, HIGH); // Bật Relay (Kiểm tra mức High/Low của mạch bạn)
-      client.publish(topic_trang_thai, "BOM DANG CHAY"); // Báo lại cho App biết
-      Serial.println("-> Da thuc hien lenh BAT");
+      cheDoTuDong = false; 
+      digitalWrite(relayPin, HIGH);
+      client.publish(topic_trang_thai, "THU CONG: DANG BAT"); // Gửi về topic mới
     } 
     else if (message == "OFF") {
-      digitalWrite(relayPin, LOW);  // Tắt Relay
-      client.publish(topic_trang_thai, "DA TAT BOM");
-      Serial.println("-> Da thuc hien lenh TAT");
+      cheDoTuDong = false; 
+      digitalWrite(relayPin, LOW);
+      client.publish(topic_trang_thai, "THU CONG: DA TAT");
+    }
+    else if (message == "AUTO") {
+      cheDoTuDong = true;  
+      client.publish(topic_trang_thai, "DA BAT CHE DO TU DONG");
     }
   }
 }
 
 void setup_wifi() {
   delay(10);
-  Serial.println();
-  Serial.print("Dang ket noi Wifi: ");
-  Serial.println(ssid);
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+    delay(500); Serial.print(".");
   }
-  Serial.println("\nWifi Connected!");
-  espClient.setInsecure(); 
+  espClient.setInsecure();
 }
 
 void reconnect() {
   while (!client.connected()) {
-    Serial.print("Dang ket noi MQTT...");
-    String clientId = "ESP8266Client-";
-    clientId += String(random(0xffff), HEX);
-    
+    String clientId = "ESP8266-" + String(random(0xffff), HEX);
     if (client.connect(clientId.c_str(), mqtt_user, mqtt_pass)) {
-      Serial.println("Thanh cong!");
+      client.subscribe(topic_lenh);
       client.publish(topic_trang_thai, "He thong Online");
-      
-      // --- 2. ĐĂNG KÝ NHẬN LỆNH ---
-      client.subscribe(topic_lenh); 
-      Serial.println("Da dang ky topic: vuon/may_bom/lenh");
-      
     } else {
-      Serial.print("That bai, rc=");
-      Serial.print(client.state());
       delay(5000);
     }
   }
@@ -93,45 +86,58 @@ void reconnect() {
 void setup() {
   Serial.begin(9600);
   pinMode(relayPin, OUTPUT);
-  pinMode(sensorPin, INPUT);
   digitalWrite(relayPin, LOW); 
-
+  
+  dht.begin(); 
   setup_wifi();
   client.setServer(mqtt_server, mqtt_port);
-  
-  // --- 3. CÀI ĐẶT HÀM CALLBACK ---
-  client.setCallback(callback); 
+  client.setCallback(callback);
 }
 
 void loop() {
-  // 1. Giữ kết nối MQTT luôn thông suốt để nhận lệnh
-  if (!client.connected()) {
-    reconnect();
-  }
-  client.loop(); 
+  if (!client.connected()) reconnect();
+  client.loop();
 
-  // 2. Đọc và gửi dữ liệu mỗi 2 giây
   unsigned long now = millis();
-  if (now - lastMsg > 2000) {
+  if (now - lastMsg > 3000) { 
     lastMsg = now;
-    
-    int sensorValue = analogRead(sensorPin); // Đọc giá trị ngầm
 
-    // --- TÍNH TOÁN PHẦN TRĂM ---
-    // 1023 là khô, 400 là ướt (bạn chỉnh lại số này nếu thấy chưa chuẩn)
-    int phanTram = map(sensorValue, 1023, 400, 0, 100);
-    
-    // Giới hạn số % chỉ từ 0 đến 100
-    if (phanTram < 0) phanTram = 0;
-    if (phanTram > 100) phanTram = 100;
+    // 1. Đọc dữ liệu
+    float h = dht.readHumidity();    
+    float t = dht.readTemperature(); 
+    int datRaw = analogRead(sensorPin);
+    int datPercent = map(datRaw, 1023, 400, 0, 100); 
+    if (datPercent < 0) datPercent = 0;
+    if (datPercent > 100) datPercent = 100;
 
-    // --- CHỈ HIỂN THỊ PHẦN TRĂM LÊN SERIAL MONITOR ---
-    Serial.print("Do am dat: ");
-    Serial.print(phanTram);
-    Serial.println("%");
+    if (isnan(h) || isnan(t)) {
+      Serial.println("Loi doc DHT22!");
+      return;
+    }
 
-    // Gửi lên App điện thoại
-    String doAmStr = String(phanTram); 
-    client.publish(topic_do_am, doAmStr.c_str());
+    // 2. Gửi dữ liệu (Topic đã được sửa ở trên)
+    client.publish(topic_dat, String(datPercent).c_str());
+    client.publish(topic_nhiet, String(t).c_str());
+    client.publish(topic_kk, String(h).c_str());
+
+    Serial.print("Dat: "); Serial.print(datPercent); Serial.print("% | ");
+    Serial.print("KK: "); Serial.print(h); Serial.print("% | ");
+    Serial.print("Nhiet: "); Serial.print(t); Serial.println("C");
+
+    // 3. LOGIC TỰ ĐỘNG
+    if (cheDoTuDong == true) {
+      if (datPercent < nguongKho) {
+        if (h < nguongMua) {
+          digitalWrite(relayPin, HIGH);
+          client.publish(topic_trang_thai, "AUTO: DANG TUOI");
+        } else {
+          digitalWrite(relayPin, LOW);
+          client.publish(topic_trang_thai, "AUTO: MUA -> KHONG TUOI");
+        }
+      } else {
+        digitalWrite(relayPin, LOW);
+        client.publish(topic_trang_thai, "AUTO: DAT DU AM");
+      }
+    }
   }
 }

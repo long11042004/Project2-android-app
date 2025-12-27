@@ -38,16 +38,21 @@ public class AirHumidityDetailActivity extends AppCompatActivity {
                 String humidityString = intent.getStringExtra(EXTRA_AIR_HUMIDITY_VALUE);
                 updateUI(Integer.parseInt(humidityString));
             } catch (NumberFormatException e) {
-                updateUI(0);
+                updateUI(null);
             }
         } else {
-            updateUI(0);
+            updateUI(null);
         }
     }
 
-    private void updateUI(int humidityValue) {
-        progressIndicator.setProgress(humidityValue, true);
-        textViewHumidityValue.setText(getString(R.string.air_humidity_format, humidityValue));
+    private void updateUI(Integer humidityValue) {
+        if (humidityValue != null) {
+            progressIndicator.setProgress(humidityValue, true);
+            textViewHumidityValue.setText(getString(R.string.air_humidity_format, humidityValue));
+        } else {
+            progressIndicator.setProgress(0, true);
+            textViewHumidityValue.setText(R.string.air_humidity_default);
+        }
     }
 
     @Override

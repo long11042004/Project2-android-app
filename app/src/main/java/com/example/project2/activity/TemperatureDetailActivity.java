@@ -42,16 +42,21 @@ public class TemperatureDetailActivity extends AppCompatActivity {
                 String tempString = intent.getStringExtra(EXTRA_TEMPERATURE_VALUE);
                 updateUI(Float.parseFloat(tempString));
             } catch (NumberFormatException e) {
-                updateUI(0);
+                updateUI(null);
             }
         } else {
-            updateUI(0);
+            updateUI(null);
         }
     }
 
-    private void updateUI(float tempValue) {
-        progressIndicator.setProgress((int) tempValue, true);
-        textViewTemperatureValue.setText(getString(R.string.temperature_format, tempValue));
+    private void updateUI(Float tempValue) {
+        if (tempValue != null) {
+            progressIndicator.setProgress(tempValue.intValue(), true);
+            textViewTemperatureValue.setText(getString(R.string.temperature_format, tempValue));
+        } else {
+            progressIndicator.setProgress(0, true);
+            textViewTemperatureValue.setText(R.string.temperature_default);
+        }
     }
 
     @Override

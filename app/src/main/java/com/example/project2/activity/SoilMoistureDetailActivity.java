@@ -45,7 +45,7 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Chi tiết Độ ẩm");
+            getSupportActionBar().setTitle("Chi tiết Độ ẩm Đất");
             // Đặt màu nền cho ActionBar để đồng bộ với theme màu nâu
             getSupportActionBar().setBackgroundDrawable(new ColorDrawable(ContextCompat.getColor(this, R.color.brown)));
         }
@@ -63,10 +63,10 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
                 updateGauge(Float.parseFloat(moistureString));
             } catch (NumberFormatException e) {
                 // Xử lý trường hợp giá trị không hợp lệ
-                updateGauge(0);
+                updateGauge(null);
             }
         } else {
-            updateGauge(0);
+            updateGauge(null);
         }
 
         // Lắng nghe các thay đổi dữ liệu độ ẩm từ Repository
@@ -93,10 +93,15 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
         });
     }
 
-    private void updateGauge(float moistureValue) {
-        int moistureInt = (int) moistureValue;
-        progressIndicator.setProgress(moistureInt, true);
-        textViewMoistureValue.setText(String.format("%d%%", moistureInt));
+    private void updateGauge(Float moistureValue) {
+        if (moistureValue != null) {
+            int moistureInt = moistureValue.intValue();
+            progressIndicator.setProgress(moistureInt, true);
+            textViewMoistureValue.setText(getString(R.string.soil_moisture_format, moistureInt));
+        } else {
+            progressIndicator.setProgress(0, true);
+            textViewMoistureValue.setText(R.string.soil_moisture_default);
+        }
     }
 
     private void setupChart() {
