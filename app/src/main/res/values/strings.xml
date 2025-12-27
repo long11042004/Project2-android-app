@@ -28,4 +28,10 @@
     <string name="action_on">Bật (ON)</string>
     <string name="action_off">Tắt (OFF)</string>
     <string name="view_detail">Chi tiết</string>
+    <string name="chart_history">Biểu đồ lịch sử</string>
+    <string name="time_1h">1 Giờ</string>
+    <string name="time_24h">24 Giờ</string>
+    <string name="stat_max">Max: %s</string>
+    <string name="stat_min">Min: %s</string>
+    <string name="stat_avg">TB: %s</string>
 </resources>

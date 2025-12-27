@@ -50,16 +50,88 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/progressIndicatorAirHumidity" />
 
+    <LinearLayout
+        android:id="@+id/layoutTimeFilter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textViewAirHumidityTitle">
+
+        <Button
+            android:id="@+id/btn1Hour"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="@string/time_1h"
+            android:textColor="@color/air_humidity_blue"
+            app:strokeColor="@color/air_humidity_blue" />
+
+        <Button
+            android:id="@+id/btn24Hours"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/time_24h"
+            android:textColor="@color/air_humidity_blue"
+            app:strokeColor="@color/air_humidity_blue" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutStats"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:weightSum="3"
+        app:layout_constraintTop_toBottomOf="@id/layoutTimeFilter"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/tvMaxVal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Max: --"
+            android:textStyle="bold"
+            android:textColor="@color/air_humidity_blue"/>
+
+        <TextView
+            android:id="@+id/tvMinVal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Min: --"
+            android:textStyle="bold"
+            android:textColor="@color/air_humidity_blue"/>
+
+        <TextView
+            android:id="@+id/tvAvgVal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="TB: --"
+            android:textStyle="bold"
+            android:textColor="@color/air_humidity_blue"/>
+    </LinearLayout>
+
     <!-- Biểu đồ lịch sử độ ẩm không khí -->
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/lineChartAirHumidityHistory"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="8dp"
         android:layout_marginBottom="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textViewAirHumidityTitle" />
+        app:layout_constraintTop_toBottomOf="@id/layoutStats" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

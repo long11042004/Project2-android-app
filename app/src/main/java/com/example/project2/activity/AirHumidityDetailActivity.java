@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,6 +26,7 @@ import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Date;
 import java.util.Locale;
 
@@ -35,6 +37,9 @@ public class AirHumidityDetailActivity extends AppCompatActivity {
     private CircularProgressIndicator progressIndicator;
     private TextView textViewHumidityValue;
     private LineChart historyChart;
+    private TextView tvMax, tvMin, tvAvg;
+    private List<com.example.project2.db.AirHumidityHistoryEntry> fullHistory = new ArrayList<>();
+    private long filterDuration = 24 * 60 * 60 * 1000L; // Mặc định 24 giờ
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +55,22 @@ public class AirHumidityDetailActivity extends AppCompatActivity {
         progressIndicator = findViewById(R.id.progressIndicatorAirHumidity);
         textViewHumidityValue = findViewById(R.id.textViewCurrentAirHumidityDetail);
         historyChart = findViewById(R.id.lineChartAirHumidityHistory);
+        tvMax = findViewById(R.id.tvMaxVal);
+        tvMin = findViewById(R.id.tvMinVal);
+        tvAvg = findViewById(R.id.tvAvgVal);
+
+        Button btn1h = findViewById(R.id.btn1Hour);
+        Button btn24h = findViewById(R.id.btn24Hours);
+
+        btn1h.setOnClickListener(v -> {
+            filterDuration = 1 * 60 * 60 * 1000L;
+            updateChartWithFilter();
+        });
+
+        btn24h.setOnClickListener(v -> {
+            filterDuration = 24 * 60 * 60 * 1000L;
+            updateChartWithFilter();
+        });
 
         setupChart();
 
@@ -81,13 +102,46 @@ public class AirHumidityDetailActivity extends AppCompatActivity {
         // Lắng nghe lịch sử dữ liệu để vẽ biểu đồ từ HumidityDataRepository
         HumidityDataRepository.getInstance(getApplication()).getAirHumidityHistory().observe(this, historyEntries -> {
             if (historyEntries != null) {
-                ArrayList<Entry> chartEntries = new ArrayList<>();
-                for (com.example.project2.db.AirHumidityHistoryEntry dbEntry : historyEntries) {
-                    chartEntries.add(new Entry(dbEntry.timestamp, dbEntry.humidityValue));
-                }
-                updateChart(chartEntries);
+                fullHistory = historyEntries;
+                updateChartWithFilter();
             }
         });
+    }
+
+    private void updateChartWithFilter() {
+        ArrayList<Entry> chartEntries = new ArrayList<>();
+        long now = System.currentTimeMillis();
+        long threshold = now - filterDuration;
+        
+        float maxVal = -Float.MAX_VALUE;
+        float minVal = Float.MAX_VALUE;
+        float sumVal = 0;
+        int count = 0;
+
+        for (com.example.project2.db.AirHumidityHistoryEntry dbEntry : fullHistory) {
+            if (dbEntry.timestamp >= threshold) {
+                float val = dbEntry.humidityValue;
+                chartEntries.add(new Entry(dbEntry.timestamp, val));
+                
+                if (val > maxVal) maxVal = val;
+                if (val < minVal) minVal = val;
+                sumVal += val;
+                count++;
+            }
+        }
+        
+        if (count > 0) {
+            float avgVal = sumVal / count;
+            tvMax.setText(getString(R.string.stat_max, String.format(Locale.getDefault(), "%.1f%%", maxVal)));
+            tvMin.setText(getString(R.string.stat_min, String.format(Locale.getDefault(), "%.1f%%", minVal)));
+            tvAvg.setText(getString(R.string.stat_avg, String.format(Locale.getDefault(), "%.1f%%", avgVal)));
+        } else {
+            tvMax.setText(getString(R.string.stat_max, "--"));
+            tvMin.setText(getString(R.string.stat_min, "--"));
+            tvAvg.setText(getString(R.string.stat_avg, "--"));
+        }
+        
+        updateChart(chartEntries);
     }
 
     private void updateUI(Float humidityValue) {

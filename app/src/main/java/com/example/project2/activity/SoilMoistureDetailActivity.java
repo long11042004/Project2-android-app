@@ -7,6 +7,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -37,6 +38,9 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
     private CircularProgressIndicator progressIndicator;
     private TextView textViewMoistureValue;
     private LineChart historyChart;
+    private TextView tvMax, tvMin, tvAvg;
+    private List<com.example.project2.db.MoistureHistoryEntry> fullHistory = new ArrayList<>();
+    private long filterDuration = 24 * 60 * 60 * 1000L; // Mặc định 24 giờ
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +57,22 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
         progressIndicator = findViewById(R.id.progressIndicatorSoilMoisture);
         textViewMoistureValue = findViewById(R.id.textViewCurrentMoistureDetail);
         historyChart = findViewById(R.id.lineChartSoilMoistureHistory);
+        tvMax = findViewById(R.id.tvMaxVal);
+        tvMin = findViewById(R.id.tvMinVal);
+        tvAvg = findViewById(R.id.tvAvgVal);
+
+        Button btn1h = findViewById(R.id.btn1Hour);
+        Button btn24h = findViewById(R.id.btn24Hours);
+
+        btn1h.setOnClickListener(v -> {
+            filterDuration = 1 * 60 * 60 * 1000L;
+            updateChartWithFilter();
+        });
+
+        btn24h.setOnClickListener(v -> {
+            filterDuration = 24 * 60 * 60 * 1000L;
+            updateChartWithFilter();
+        });
 
         setupChart();
 
@@ -84,13 +104,46 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
         // Lắng nghe toàn bộ lịch sử (bao gồm cả cập nhật mới) để vẽ biểu đồ
         MoistureDataRepository.getInstance(getApplication()).getFullHistory().observe(this, historyEntries -> {
             if (historyEntries != null) {
-                ArrayList<Entry> chartEntries = new ArrayList<>();
-                for (com.example.project2.db.MoistureHistoryEntry dbEntry : historyEntries) {
-                    chartEntries.add(new Entry(dbEntry.timestamp, dbEntry.moistureValue));
-                }
-                updateChart(chartEntries);
+                fullHistory = historyEntries;
+                updateChartWithFilter();
             }
         });
+    }
+
+    private void updateChartWithFilter() {
+        ArrayList<Entry> chartEntries = new ArrayList<>();
+        long now = System.currentTimeMillis();
+        long threshold = now - filterDuration;
+        
+        float maxVal = -Float.MAX_VALUE;
+        float minVal = Float.MAX_VALUE;
+        float sumVal = 0;
+        int count = 0;
+
+        for (com.example.project2.db.MoistureHistoryEntry dbEntry : fullHistory) {
+            if (dbEntry.timestamp >= threshold) {
+                float val = dbEntry.moistureValue;
+                chartEntries.add(new Entry(dbEntry.timestamp, val));
+                
+                if (val > maxVal) maxVal = val;
+                if (val < minVal) minVal = val;
+                sumVal += val;
+                count++;
+            }
+        }
+        
+        if (count > 0) {
+            float avgVal = sumVal / count;
+            tvMax.setText(getString(R.string.stat_max, String.format(Locale.getDefault(), "%.1f%%", maxVal)));
+            tvMin.setText(getString(R.string.stat_min, String.format(Locale.getDefault(), "%.1f%%", minVal)));
+            tvAvg.setText(getString(R.string.stat_avg, String.format(Locale.getDefault(), "%.1f%%", avgVal)));
+        } else {
+            tvMax.setText(getString(R.string.stat_max, "--"));
+            tvMin.setText(getString(R.string.stat_min, "--"));
+            tvAvg.setText(getString(R.string.stat_avg, "--"));
+        }
+        
+        updateChart(chartEntries);
     }
 
     private void updateGauge(Float moistureValue) {
