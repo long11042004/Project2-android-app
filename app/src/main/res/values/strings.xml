@@ -7,7 +7,7 @@
     <string name="temperature_default">--°C</string>
 
     <string name="air_humidity">Độ ẩm không khí</string>
-    <string name="air_humidity_format">%d%%</string>
+    <string name="air_humidity_format">%.1f%%</string>
     <string name="air_humidity_default">--%</string>
 
     <string name="soil_moisture">Độ ẩm đất</string>
@@ -22,4 +22,10 @@
     <string name="pump_status_running">Trạng thái máy bơm: Đang chạy</string>
     <string name="pump_status_off">Trạng thái máy bơm: Đã tắt</string>
     <string name="pump_status_unknown">Trạng thái: Chưa rõ</string>
+    <string name="pump_status_label">Trạng thái máy bơm</string>
+    <string name="status_updating">Đang cập nhật...</string>
+    <string name="mode_auto">Chế độ Tự động (AUTO)</string>
+    <string name="action_on">Bật (ON)</string>
+    <string name="action_off">Tắt (OFF)</string>
+    <string name="view_detail">Chi tiết</string>
 </resources>

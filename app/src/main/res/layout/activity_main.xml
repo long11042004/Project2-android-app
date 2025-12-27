@@ -21,9 +21,6 @@
         android:id="@+id/cardViewTemperature"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:foreground="?android:attr/selectableItemBackground"
         android:layout_margin="8dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
@@ -62,6 +59,15 @@
                 android:textSize="32sp"
                 android:textStyle="bold"
                 android:textColor="?android:attr/textColorPrimary"/>
+
+            <Button
+                android:id="@+id/btnDetailTemperature"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/view_detail"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@color/temperature_red"/>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
@@ -70,9 +76,6 @@
         android:id="@+id/cardViewAirHumidity"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:foreground="?android:attr/selectableItemBackground"
         android:layout_margin="8dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
@@ -111,6 +114,15 @@
                 android:textSize="32sp"
                 android:textStyle="bold"
                 android:textColor="?android:attr/textColorPrimary"/>
+
+            <Button
+                android:id="@+id/btnDetailHumidity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/view_detail"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@color/air_humidity_blue"/>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
@@ -119,9 +131,6 @@
         android:id="@+id/cardViewSoilMoisture"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:foreground="?android:attr/selectableItemBackground"
         android:layout_margin="8dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
@@ -160,6 +169,15 @@
                 android:textSize="32sp"
                 android:textStyle="bold"
                 android:textColor="?android:attr/textColorPrimary"/>
+
+            <Button
+                android:id="@+id/btnDetailSoil"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/view_detail"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@color/brown"/>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
@@ -169,8 +187,6 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_margin="8dp"
-            android:clickable="false"
-            android:focusable="false"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp"
             app:layout_columnWeight="1"
@@ -198,14 +214,6 @@
                     android:textSize="20sp"
                     android:textStyle="bold" />
 
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switchPump"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textOff="@string/switch_off"
-                    android:textOn="@string/switch_on" />
-
                 <TextView
                     android:id="@+id/textViewPumpStatus"
                     android:layout_width="wrap_content"
@@ -214,6 +222,15 @@
                     android:text="@string/pump_status_unknown"
                     android:textSize="16sp"
                     android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnDetailPump"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/view_detail"
+                    android:textColor="@android:color/white"
+                    android:backgroundTint="@color/mint"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

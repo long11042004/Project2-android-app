@@ -5,9 +5,15 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-@Database(entities = {MoistureHistoryEntry.class}, version = 1, exportSchema = false)
+@Database(entities = {
+        MoistureHistoryEntry.class,
+        TemperatureHistoryEntry.class,
+        AirHumidityHistoryEntry.class
+}, version = 2, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract MoistureHistoryDao moistureHistoryDao();
+    public abstract TemperatureHistoryDao temperatureHistoryDao();
+    public abstract AirHumidityHistoryDao airHumidityHistoryDao();
 
     private static volatile AppDatabase INSTANCE;
 
@@ -16,7 +22,9 @@ public abstract class AppDatabase extends RoomDatabase {
             synchronized (AppDatabase.class) {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
-                            AppDatabase.class, "app_database").build();
+                            AppDatabase.class, "app_database")
+                            .fallbackToDestructiveMigration() // Xóa dữ liệu cũ nếu thay đổi version
+                            .build();
                 }
             }
         }

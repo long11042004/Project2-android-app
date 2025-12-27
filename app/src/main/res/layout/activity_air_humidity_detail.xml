@@ -50,4 +50,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/progressIndicatorAirHumidity" />
 
+    <!-- Biểu đồ lịch sử độ ẩm không khí -->
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/lineChartAirHumidityHistory"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textViewAirHumidityTitle" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
