@@ -41,6 +41,7 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
     private TextView tvMax, tvMin, tvAvg;
     private List<com.example.project2.db.MoistureHistoryEntry> fullHistory = new ArrayList<>();
     private long filterDuration = 24 * 60 * 60 * 1000L; // Mặc định 24 giờ
+    private boolean isConnected = false; // Thêm biến trạng thái kết nối
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,7 +92,7 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
 
         // Lắng nghe các thay đổi dữ liệu độ ẩm từ Repository
         MoistureDataRepository.getInstance(getApplication()).getSoilMoisture().observe(this, moistureString -> {
-            if (moistureString != null) {
+            if (isConnected && moistureString != null) { // Kiểm tra trạng thái kết nối
                 try {
                     float moistureValue = Float.parseFloat(moistureString);
                     updateGauge(moistureValue);
@@ -103,7 +104,7 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
 
         // Lắng nghe toàn bộ lịch sử (bao gồm cả cập nhật mới) để vẽ biểu đồ
         MoistureDataRepository.getInstance(getApplication()).getFullHistory().observe(this, historyEntries -> {
-            if (historyEntries != null) {
+            if (isConnected && historyEntries != null) { // Kiểm tra trạng thái kết nối
                 fullHistory = historyEntries;
                 updateChartWithFilter();
             }
@@ -240,4 +241,5 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
 }

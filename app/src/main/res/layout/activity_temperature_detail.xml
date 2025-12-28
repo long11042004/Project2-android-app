@@ -166,8 +166,8 @@
                         android:textColor="@color/temperature_red"/>
                 </LinearLayout>
 
-                <com.github.mikephil.charting.charts.LineChart
-                    android:id="@+id/lineChartTemperatureHistory"
+                <com.github.mikephil.charting.charts.BarChart
+                    android:id="@+id/barChartTemperatureHistory"
                     android:layout_width="match_parent"
                     android:layout_height="250dp" />
 

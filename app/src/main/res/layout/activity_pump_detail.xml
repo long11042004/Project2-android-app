@@ -144,8 +144,8 @@
                 android:id="@+id/switchAuto"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:thumbTint="#2196F3"
-                app:trackTint="#90CAF9"/>
+                app:thumbTint="@drawable/switch_thumb_auto"
+                app:trackTint="@drawable/switch_track_auto"/>
         </LinearLayout>
 
         <LinearLayout
@@ -168,8 +168,8 @@
                 android:id="@+id/switchManual"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:thumbTint="#4CAF50"
-                app:trackTint="#A5D6A7"/>
+                app:thumbTint="@drawable/switch_thumb_manual"
+                app:trackTint="@drawable/switch_track_manual"/>
         </LinearLayout>
 
         <TextView

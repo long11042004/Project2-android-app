@@ -40,6 +40,7 @@ public class AirHumidityDetailActivity extends AppCompatActivity {
     private TextView tvMax, tvMin, tvAvg;
     private List<com.example.project2.db.AirHumidityHistoryEntry> fullHistory = new ArrayList<>();
     private long filterDuration = 24 * 60 * 60 * 1000L; // Mặc định 24 giờ
+    private boolean isConnected = false; // Thêm biến trạng thái kết nối
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,7 +90,7 @@ public class AirHumidityDetailActivity extends AppCompatActivity {
 
         // Lắng nghe dữ liệu thời gian thực từ HumidityDataRepository
         HumidityDataRepository.getInstance(getApplication()).getAirHumidity().observe(this, humidityString -> {
-            if (humidityString != null) {
+            if (isConnected && humidityString != null) { // Kiểm tra trạng thái kết nối
                 try {
                     float humidityValue = Float.parseFloat(humidityString);
                     updateUI(humidityValue);
@@ -101,7 +102,7 @@ public class AirHumidityDetailActivity extends AppCompatActivity {
 
         // Lắng nghe lịch sử dữ liệu để vẽ biểu đồ từ HumidityDataRepository
         HumidityDataRepository.getInstance(getApplication()).getAirHumidityHistory().observe(this, historyEntries -> {
-            if (historyEntries != null) {
+            if (isConnected && historyEntries != null) { // Kiểm tra trạng thái kết nối
                 fullHistory = historyEntries;
                 updateChartWithFilter();
             }
@@ -232,4 +233,5 @@ public class AirHumidityDetailActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
 }

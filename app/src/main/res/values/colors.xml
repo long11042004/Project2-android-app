@@ -13,4 +13,6 @@
     <color name="air_humidity_blue">#03A9F4</color>
     <color name="air_humidity_blue_dark">#0288D1</color>
     <color name="mint">#009688</color>
+    <color name="switch_track_disabled">#A0A0A0</color>
+    <color name="switch_thumb_disabled">#F0F0F0</color>
 </resources>

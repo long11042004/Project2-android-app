@@ -3,8 +3,6 @@ package com.example.project2.activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Button;
@@ -13,16 +11,17 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.example.project2.db.TemperatureHistoryEntry;
 import com.example.project2.model.TemperatureDataRepository;
 import com.example.project2.R;
-import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.formatter.ValueFormatter;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
+import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.text.SimpleDateFormat;
@@ -35,10 +34,11 @@ public class TemperatureDetailActivity extends AppCompatActivity {
     public static final String EXTRA_TEMPERATURE_VALUE = "EXTRA_TEMPERATURE_VALUE";
     private CircularProgressIndicator progressIndicator;
     private TextView textViewTemperatureValue;
-    private LineChart historyChart;
+    private BarChart historyChart;
     private TextView tvMax, tvMin, tvAvg;
     private List<com.example.project2.db.TemperatureHistoryEntry> fullHistory = new ArrayList<>();
     private long filterDuration = 24 * 60 * 60 * 1000L; // Mặc định 24 giờ
+    private boolean isConnected = false; // Thêm biến trạng thái kết nối
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +54,7 @@ public class TemperatureDetailActivity extends AppCompatActivity {
 
         progressIndicator = findViewById(R.id.progressIndicatorTemperature);
         textViewTemperatureValue = findViewById(R.id.textViewCurrentTemperatureDetail);
-        historyChart = findViewById(R.id.lineChartTemperatureHistory);
+        historyChart = findViewById(R.id.barChartTemperatureHistory);
         tvMax = findViewById(R.id.tvMaxVal);
         tvMin = findViewById(R.id.tvMinVal);
         tvAvg = findViewById(R.id.tvAvgVal);
@@ -89,7 +89,7 @@ public class TemperatureDetailActivity extends AppCompatActivity {
 
         // Lắng nghe dữ liệu thời gian thực từ TemperatureDataRepository
         TemperatureDataRepository.getInstance(getApplication()).getTemperature().observe(this, tempString -> {
-            if (tempString != null) {
+            if (isConnected && tempString != null) { // Kiểm tra trạng thái kết nối
                 try {
                     float tempValue = Float.parseFloat(tempString);
                     updateUI(tempValue);
@@ -101,7 +101,7 @@ public class TemperatureDetailActivity extends AppCompatActivity {
 
         // Lắng nghe lịch sử dữ liệu để vẽ biểu đồ từ TemperatureDataRepository
         TemperatureDataRepository.getInstance(getApplication()).getTemperatureHistory().observe(this, historyEntries -> {
-            if (historyEntries != null) {
+            if (isConnected && historyEntries != null) { // Kiểm tra trạng thái kết nối
                 fullHistory = historyEntries;
                 updateChartWithFilter();
             }
@@ -109,7 +109,7 @@ public class TemperatureDetailActivity extends AppCompatActivity {
     }
 
     private void updateChartWithFilter() {
-        ArrayList<Entry> chartEntries = new ArrayList<>();
+        ArrayList<BarEntry> chartEntries = new ArrayList<>();
         long now = System.currentTimeMillis();
         long threshold = now - filterDuration;
         
@@ -118,10 +118,11 @@ public class TemperatureDetailActivity extends AppCompatActivity {
         float sumVal = 0;
         int count = 0;
 
-        for (com.example.project2.db.TemperatureHistoryEntry dbEntry : fullHistory) {
+        for (int i = 0; i < fullHistory.size(); i++) {
+            TemperatureHistoryEntry dbEntry = fullHistory.get(i);
             if (dbEntry.timestamp >= threshold) {
                 float val = dbEntry.temperatureValue;
-                chartEntries.add(new Entry(dbEntry.timestamp, val));
+                chartEntries.add(new BarEntry(i, val)); // Sử dụng index làm giá trị x
                 
                 if (val > maxVal) maxVal = val;
                 if (val < minVal) minVal = val;
@@ -152,20 +153,23 @@ public class TemperatureDetailActivity extends AppCompatActivity {
         historyChart.setPinchZoom(true);
         historyChart.setDrawGridBackground(false);
 
+        // Cấu hình trục X
         XAxis xAxis = historyChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
         xAxis.setDrawLabels(true);
-        xAxis.setGranularity(1000f * 30); // 30 giây
-
-        xAxis.setValueFormatter(new ValueFormatter() {
+        xAxis.setGranularity(1f); // Đảm bảo hiển thị mỗi nhãn
+        xAxis.setValueFormatter(new IndexAxisValueFormatter() {
             private final SimpleDateFormat mFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
             @Override
-            public String getAxisLabel(float value, com.github.mikephil.charting.components.AxisBase axis) {
-                return mFormat.format(new Date((long) value));
+            public String getFormattedValue(float value) {
+                if (value >= 0 && value < fullHistory.size()) {
+                    return mFormat.format(new Date(fullHistory.get((int) value).timestamp));
+                }
+                return "";
             }
         });
-
+        
         YAxis leftAxis = historyChart.getAxisLeft();
         leftAxis.setDrawGridLines(true);
         leftAxis.setAxisMinimum(0f);
@@ -173,20 +177,20 @@ public class TemperatureDetailActivity extends AppCompatActivity {
 
         historyChart.getAxisRight().setEnabled(false);
         historyChart.getLegend().setEnabled(false);
-        historyChart.setData(new LineData());
+        historyChart.setData(new BarData()); // Khởi tạo với dữ liệu trống
     }
 
-    private void updateChart(ArrayList<Entry> chartEntries) {
-        LineData data = historyChart.getData();
-        ILineDataSet set = data.getDataSetByIndex(0);
+    private void updateChart(ArrayList<BarEntry> chartEntries) {
+        BarData data = historyChart.getBarData();
+        IBarDataSet set = data.getDataSetByIndex(0);
 
         if (set == null) {
             set = createSet();
             data.addDataSet(set);
         }
-        ((LineDataSet) set).setValues(chartEntries);
+        ((BarDataSet) set).setValues(chartEntries);
         data.notifyDataChanged();
-        historyChart.notifyDataSetChanged();
+        historyChart.invalidate(); // Cập nhật biểu đồ
         historyChart.moveViewToX(data.getEntryCount());
     }
 
@@ -200,26 +204,16 @@ public class TemperatureDetailActivity extends AppCompatActivity {
         }
     }
 
-    private LineDataSet createSet() {
-        LineDataSet set = new LineDataSet(null, "Lịch sử nhiệt độ");
-        set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+    private BarDataSet createSet() {
+        BarDataSet set = new BarDataSet(null, "Lịch sử nhiệt độ");
         set.setDrawValues(false);
-        set.setDrawCircleHole(false);
-        set.setLineWidth(2f);
-        set.setDrawCircles(false);
-        set.setDrawFilled(true);
-
         int redColor = ContextCompat.getColor(this, R.color.temperature_red);
         set.setColor(redColor);
-        set.setCircleColor(redColor);
+        
+        // Tùy chỉnh thêm cho BarDataSet nếu cần
+        // set.setBarBorderColor(redColor);
+        // set.setBarBorderWidth(1f);
 
-        // Tạo gradient màu đỏ cho vùng dưới biểu đồ
-        int[] gradientColors = {
-                ContextCompat.getColor(this, R.color.temperature_red),
-                ContextCompat.getColor(this, android.R.color.white)
-        };
-        Drawable gradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, gradientColors);
-        set.setFillDrawable(gradient);
         return set;
     }
 
