@@ -2,26 +2,31 @@ package com.example.project2.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.example.project2.db.TemperatureHistoryEntry;
+import com.example.project2.view.CustomMarkerView;
 import com.example.project2.model.TemperatureDataRepository;
 import com.example.project2.R;
-import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.charts.ScatterChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.BarData;
-import com.github.mikephil.charting.data.BarDataSet;
-import com.github.mikephil.charting.data.BarEntry;
-import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
-import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.ScatterData;
+import com.github.mikephil.charting.data.ScatterDataSet;
+import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
+import com.github.mikephil.charting.interfaces.datasets.IScatterDataSet;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.text.SimpleDateFormat;
@@ -30,15 +35,14 @@ import java.util.List;
 import java.util.Date;
 import java.util.Locale;
 
-public class TemperatureDetailActivity extends AppCompatActivity {
+public class TemperatureDetailActivity extends AppCompatActivity implements OnChartValueSelectedListener {
     public static final String EXTRA_TEMPERATURE_VALUE = "EXTRA_TEMPERATURE_VALUE";
     private CircularProgressIndicator progressIndicator;
     private TextView textViewTemperatureValue;
-    private BarChart historyChart;
+    private ScatterChart historyChart;
     private TextView tvMax, tvMin, tvAvg;
     private List<com.example.project2.db.TemperatureHistoryEntry> fullHistory = new ArrayList<>();
     private long filterDuration = 24 * 60 * 60 * 1000L; // Mặc định 24 giờ
-    private boolean isConnected = false; // Thêm biến trạng thái kết nối
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,7 +93,7 @@ public class TemperatureDetailActivity extends AppCompatActivity {
 
         // Lắng nghe dữ liệu thời gian thực từ TemperatureDataRepository
         TemperatureDataRepository.getInstance(getApplication()).getTemperature().observe(this, tempString -> {
-            if (isConnected && tempString != null) { // Kiểm tra trạng thái kết nối
+            if (tempString != null) {
                 try {
                     float tempValue = Float.parseFloat(tempString);
                     updateUI(tempValue);
@@ -101,7 +105,7 @@ public class TemperatureDetailActivity extends AppCompatActivity {
 
         // Lắng nghe lịch sử dữ liệu để vẽ biểu đồ từ TemperatureDataRepository
         TemperatureDataRepository.getInstance(getApplication()).getTemperatureHistory().observe(this, historyEntries -> {
-            if (isConnected && historyEntries != null) { // Kiểm tra trạng thái kết nối
+            if (historyEntries != null) {
                 fullHistory = historyEntries;
                 updateChartWithFilter();
             }
@@ -109,7 +113,7 @@ public class TemperatureDetailActivity extends AppCompatActivity {
     }
 
     private void updateChartWithFilter() {
-        ArrayList<BarEntry> chartEntries = new ArrayList<>();
+        ArrayList<Entry> chartEntries = new ArrayList<>();
         long now = System.currentTimeMillis();
         long threshold = now - filterDuration;
         
@@ -122,7 +126,7 @@ public class TemperatureDetailActivity extends AppCompatActivity {
             TemperatureHistoryEntry dbEntry = fullHistory.get(i);
             if (dbEntry.timestamp >= threshold) {
                 float val = dbEntry.temperatureValue;
-                chartEntries.add(new BarEntry(i, val)); // Sử dụng index làm giá trị x
+                chartEntries.add(new Entry(dbEntry.timestamp, val)); // Sử dụng timestamp làm giá trị x
                 
                 if (val > maxVal) maxVal = val;
                 if (val < minVal) minVal = val;
@@ -158,15 +162,12 @@ public class TemperatureDetailActivity extends AppCompatActivity {
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
         xAxis.setDrawLabels(true);
-        xAxis.setGranularity(1f); // Đảm bảo hiển thị mỗi nhãn
-        xAxis.setValueFormatter(new IndexAxisValueFormatter() {
+        xAxis.setGranularity(1000f * 30); // 30 giây
+        xAxis.setValueFormatter(new ValueFormatter() {
             private final SimpleDateFormat mFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
             @Override
-            public String getFormattedValue(float value) {
-                if (value >= 0 && value < fullHistory.size()) {
-                    return mFormat.format(new Date(fullHistory.get((int) value).timestamp));
-                }
-                return "";
+            public String getAxisLabel(float value, com.github.mikephil.charting.components.AxisBase axis) {
+                return mFormat.format(new Date((long) value));
             }
         });
         
@@ -177,21 +178,38 @@ public class TemperatureDetailActivity extends AppCompatActivity {
 
         historyChart.getAxisRight().setEnabled(false);
         historyChart.getLegend().setEnabled(false);
-        historyChart.setData(new BarData()); // Khởi tạo với dữ liệu trống
+        historyChart.setData(new ScatterData()); // Khởi tạo với dữ liệu trống
+
+        // Thiết lập MarkerView (hiển thị thông tin khi nhấn vào điểm)
+        CustomMarkerView mv = new CustomMarkerView(this, R.layout.marker_view);
+        mv.setUnit("°C");
+        mv.setMarkerBackgroundColor(ContextCompat.getColor(this, R.color.temperature_red));
+        mv.setChartView(historyChart);
+        historyChart.setMarker(mv);
+        historyChart.setOnChartValueSelectedListener(this);
     }
 
-    private void updateChart(ArrayList<BarEntry> chartEntries) {
-        BarData data = historyChart.getBarData();
-        IBarDataSet set = data.getDataSetByIndex(0);
+    private void updateChart(ArrayList<Entry> chartEntries) {
+        ScatterData data = historyChart.getData();
+        IScatterDataSet set = data.getDataSetByIndex(0);
 
         if (set == null) {
-            set = createSet();
+            set = createSet(chartEntries);
             data.addDataSet(set);
+        } else {
+            set.clear();
+            for (Entry e : chartEntries) {
+                set.addEntry(e);
+            }
         }
-        ((BarDataSet) set).setValues(chartEntries);
+
         data.notifyDataChanged();
-        historyChart.invalidate(); // Cập nhật biểu đồ
-        historyChart.moveViewToX(data.getEntryCount());
+        historyChart.notifyDataSetChanged();
+        
+        if (!chartEntries.isEmpty()) {
+            historyChart.moveViewToX(chartEntries.get(chartEntries.size() - 1).getX());
+        }
+        historyChart.getLegend().setEnabled(false);
     }
 
     private void updateUI(Float tempValue) {
@@ -204,17 +222,27 @@ public class TemperatureDetailActivity extends AppCompatActivity {
         }
     }
 
-    private BarDataSet createSet() {
-        BarDataSet set = new BarDataSet(null, "Lịch sử nhiệt độ");
+    private ScatterDataSet createSet(ArrayList<Entry> chartEntries) {
+        ScatterDataSet set = new ScatterDataSet(chartEntries, "Temperature History");
         set.setDrawValues(false);
         int redColor = ContextCompat.getColor(this, R.color.temperature_red);
         set.setColor(redColor);
-        
-        // Tùy chỉnh thêm cho BarDataSet nếu cần
-        // set.setBarBorderColor(redColor);
-        // set.setBarBorderWidth(1f);
+
+        set.setScatterShape(ScatterChart.ScatterShape.CIRCLE);
+        set.setScatterShapeSize(25f); // Tăng kích thước điểm để dễ nhìn hơn
+        set.setScatterShapeHoleColor(Color.WHITE); // Tạo lỗ trắng ở giữa
+        set.setScatterShapeHoleRadius(2f); // Kích thước lỗ
 
         return set;
+    }
+
+    @Override
+    public void onValueSelected(Entry e, Highlight h) {
+        // Không cần hiển thị Toast nữa vì đã có MarkerView
+    }
+
+    @Override
+    public void onNothingSelected() {
     }
 
     @Override

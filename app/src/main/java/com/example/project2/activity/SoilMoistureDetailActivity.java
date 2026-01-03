@@ -4,8 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
@@ -13,16 +11,19 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.example.project2.view.CustomMarkerView;
 import com.example.project2.model.MoistureDataRepository;
 import com.example.project2.R;
-import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.charts.ScatterChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.data.ScatterData;
+import com.github.mikephil.charting.data.ScatterDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.interfaces.datasets.IScatterDataSet;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.util.ArrayList;
@@ -31,17 +32,16 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.List;
 
-public class SoilMoistureDetailActivity extends AppCompatActivity {
+public class SoilMoistureDetailActivity extends AppCompatActivity implements OnChartValueSelectedListener {
 
     public static final String EXTRA_MOISTURE_VALUE = "EXTRA_MOISTURE_VALUE";
 
     private CircularProgressIndicator progressIndicator;
     private TextView textViewMoistureValue;
-    private LineChart historyChart;
+    private ScatterChart historyChart;
     private TextView tvMax, tvMin, tvAvg;
     private List<com.example.project2.db.MoistureHistoryEntry> fullHistory = new ArrayList<>();
     private long filterDuration = 24 * 60 * 60 * 1000L; // Mặc định 24 giờ
-    private boolean isConnected = false; // Thêm biến trạng thái kết nối
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,7 +92,7 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
 
         // Lắng nghe các thay đổi dữ liệu độ ẩm từ Repository
         MoistureDataRepository.getInstance(getApplication()).getSoilMoisture().observe(this, moistureString -> {
-            if (isConnected && moistureString != null) { // Kiểm tra trạng thái kết nối
+            if (moistureString != null) {
                 try {
                     float moistureValue = Float.parseFloat(moistureString);
                     updateGauge(moistureValue);
@@ -104,7 +104,7 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
 
         // Lắng nghe toàn bộ lịch sử (bao gồm cả cập nhật mới) để vẽ biểu đồ
         MoistureDataRepository.getInstance(getApplication()).getFullHistory().observe(this, historyEntries -> {
-            if (isConnected && historyEntries != null) { // Kiểm tra trạng thái kết nối
+            if (historyEntries != null) {
                 fullHistory = historyEntries;
                 updateChartWithFilter();
             }
@@ -188,50 +188,62 @@ public class SoilMoistureDetailActivity extends AppCompatActivity {
 
         historyChart.getAxisRight().setEnabled(false);
         historyChart.getLegend().setEnabled(false);
-        historyChart.setData(new LineData()); // Khởi tạo với dữ liệu trống
+        historyChart.setData(new ScatterData()); // Khởi tạo với dữ liệu trống
+
+        // Thiết lập MarkerView
+        CustomMarkerView mv = new CustomMarkerView(this, R.layout.marker_view);
+        mv.setUnit("%");
+        mv.setMarkerBackgroundColor(ContextCompat.getColor(this, R.color.brown));
+        mv.setChartView(historyChart);
+        historyChart.setMarker(mv);
+        historyChart.setOnChartValueSelectedListener(this);
     }
 
     private void updateChart(ArrayList<Entry> chartEntries) {
-        LineData data = historyChart.getData();
-        ILineDataSet set = data.getDataSetByIndex(0);
+        ScatterData data = historyChart.getData();
+        IScatterDataSet set = data.getDataSetByIndex(0);
 
         if (set == null) {
             set = createSet();
             data.addDataSet(set);
+        } else {
+            set.clear();
+            for (Entry e : chartEntries) {
+                set.addEntry(e);
+            }
         }
-
-        // Cập nhật dữ liệu cho DataSet
-        ((LineDataSet) set).setValues(chartEntries);
 
         // Thông báo cho biểu đồ về sự thay đổi
         data.notifyDataChanged();
         historyChart.notifyDataSetChanged();
 
         // Tự động cuộn đến điểm dữ liệu mới nhất
-        historyChart.moveViewToX(data.getEntryCount());
+        if (!chartEntries.isEmpty()) {
+            historyChart.moveViewToX(chartEntries.get(chartEntries.size() - 1).getX());
+        }
+        historyChart.getLegend().setEnabled(false);
     }
 
-    private LineDataSet createSet() {
-        LineDataSet set = new LineDataSet(null, "Lịch sử độ ẩm");
-        set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+    private ScatterDataSet createSet() {
+        ScatterDataSet set = new ScatterDataSet(null, "Lịch sử độ ẩm");
         set.setDrawValues(false);
-        set.setDrawCircleHole(false);
-        set.setLineWidth(2f);
-        set.setDrawCircles(false); // Tắt vẽ điểm tròn để biểu đồ mượt hơn khi có nhiều dữ liệu
         
-        // --- TÙY CHỈNH MÀU SẮC BIỂU ĐỒ ---
         int brownColor = ContextCompat.getColor(this, R.color.brown);
         set.setColor(brownColor);
-        set.setCircleColor(brownColor);
-        set.setDrawFilled(true);
-        int[] gradientColors = {
-                ContextCompat.getColor(this, R.color.brown_light), // Màu nâu nhạt (Tan) cho vùng ẩm (giá trị cao, ở trên)
-                ContextCompat.getColor(this, R.color.brown)    // Màu nâu sẫm (SaddleBrown) cho vùng khô (giá trị thấp, ở dưới)
-        };
-        Drawable gradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, gradientColors);
-        set.setFillDrawable(gradient);
+
+        set.setScatterShape(ScatterChart.ScatterShape.CIRCLE);
+        set.setScatterShapeSize(25f);
+        set.setScatterShapeHoleColor(Color.WHITE);
+        set.setScatterShapeHoleRadius(2f);
+
         return set;
     }
+
+    @Override
+    public void onValueSelected(Entry e, Highlight h) { }
+
+    @Override
+    public void onNothingSelected() { }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {

@@ -28,7 +28,8 @@ import java.util.List;
 public class PumpDetailActivity extends AppCompatActivity implements MqttCallbackListener {
 
     public static final String EXTRA_PUMP_STATUS = "EXTRA_PUMP_STATUS";
-    private TextView textViewPumpStatus;
+    private TextView textViewPumpMode;
+    private TextView textViewPumpState;
     private static final String TOPIC_COMMAND = "vuon/may_bom/lenh";
     private static final String TOPIC_STATUS = "vuon/may_bom";
     private MqttHandler mqttHandler;
@@ -52,7 +53,8 @@ public class PumpDetailActivity extends AppCompatActivity implements MqttCallbac
             getSupportActionBar().setBackgroundDrawable(new ColorDrawable(0xFF009688));
         }
 
-        textViewPumpStatus = findViewById(R.id.textViewPumpStatusDetail);
+        textViewPumpMode = findViewById(R.id.textViewPumpMode);
+        textViewPumpState = findViewById(R.id.textViewPumpState);
         cvStatusDot = findViewById(R.id.cvStatusDot);
         tvConnectionStatus = findViewById(R.id.tvConnectionStatus);
         pieChart = findViewById(R.id.pieChartPump);
@@ -119,22 +121,70 @@ public class PumpDetailActivity extends AppCompatActivity implements MqttCallbac
     }
 
     private void updatePumpStatusUI(String status) {
-        if (status == null) return;
-        textViewPumpStatus.setText(status);
-
-        // Kiểm tra trạng thái để đổi màu chữ (Dựa trên logic esp8266.cpp: "DANG BAT" hoặc "DANG TUOI")
-        boolean isPumpOn = status.contains("DANG BAT") || status.contains("DANG TUOI");
-        if (isPumpOn) {
-            textViewPumpStatus.setTextColor(Color.parseColor("#4CAF50")); // Màu xanh (Green)
-        } else {
-            textViewPumpStatus.setTextColor(Color.parseColor("#F44336")); // Màu đỏ (Red)
+        if (status == null) {
+            textViewPumpMode.setText("Chế độ: Đang cập nhật");
+            textViewPumpState.setText("Trạng thái: --");
+            return;
         }
 
-        // Cập nhật trạng thái Switch dựa trên tin nhắn (VD: "AUTO: DANG TUOI" -> Bật switch)
+        String modeDisplay = "Chế độ: --";
+        String stateDisplay = "Trạng thái: --";
+        int stateColor = Color.BLACK; // Màu mặc định
+
+        String upperStatus = status.toUpperCase();
+        String[] parts = upperStatus.split(":");
+
+        String mode = "";
+        String state = "";
+
+        if (parts.length > 0) {
+            mode = parts[0].trim();
+        }
+        if (parts.length > 1) {
+            state = parts[1].trim();
+        } else {
+            // Xử lý trường hợp không có dấu hai chấm, coi toàn bộ là trạng thái
+            state = upperStatus;
+        }
+
+        // 1. Xác định chuỗi hiển thị cho Chế độ
+        if (mode.equals("AUTO")) {
+            modeDisplay = "Chế độ: Tự động";
+        } else if (mode.equals("THU CONG") || mode.equals("MANUAL")) {
+            modeDisplay = "Chế độ: Thủ công";
+        }
+
+        // 2. Xác định chuỗi hiển thị và màu sắc cho Trạng thái
+        boolean isPumpOn = state.contains("DANG BAT") || state.contains("DANG TUOI");
+
+        if (state.contains("DANG TUOI")) {
+            stateDisplay = "Trạng thái: Đang tưới";
+        } else if (state.contains("DANG BAT")) {
+            stateDisplay = "Trạng thái: Đang bật";
+        } else if (state.contains("DA TAT")) {
+            stateDisplay = "Trạng thái: Đã tắt";
+        } else if (state.contains("DAT DU AM")) {
+            stateDisplay = "Trạng thái: Đất đủ ẩm";
+        } else {
+            // Dự phòng cho các trạng thái không xác định
+            stateDisplay = "Trạng thái: " + (parts.length > 1 ? parts[1].trim() : status);
+        }
+
+        if (isPumpOn) {
+            stateColor = Color.parseColor("#4CAF50"); // Màu xanh lá
+        } else {
+            stateColor = Color.parseColor("#F44336"); // Màu đỏ
+        }
+
+        // 3. Cập nhật giao diện
+        textViewPumpMode.setText(modeDisplay);
+        textViewPumpState.setText(stateDisplay);
+        textViewPumpState.setTextColor(stateColor);
+
+        // 4. Cập nhật các công tắc (Switch)
         if (switchAuto != null && switchManual != null) {
             isProgrammaticChange = true;
-            switchAuto.setChecked(status.toUpperCase().contains("AUTO"));
-            // Cập nhật switch thủ công dựa trên trạng thái thực tế của bơm
+            switchAuto.setChecked(mode.equals("AUTO"));
             switchManual.setChecked(isPumpOn);
             isProgrammaticChange = false;
         }

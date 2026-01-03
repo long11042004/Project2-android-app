@@ -2,9 +2,8 @@ package com.example.project2.activity;
 
 import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.graphics.Color;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
@@ -12,16 +11,19 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.example.project2.view.CustomMarkerView;
 import com.example.project2.model.HumidityDataRepository;
 import com.example.project2.R;
-import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.charts.ScatterChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.data.ScatterData;
+import com.github.mikephil.charting.data.ScatterDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.interfaces.datasets.IScatterDataSet;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.text.SimpleDateFormat;
@@ -30,17 +32,16 @@ import java.util.List;
 import java.util.Date;
 import java.util.Locale;
 
-public class AirHumidityDetailActivity extends AppCompatActivity {
+public class AirHumidityDetailActivity extends AppCompatActivity implements OnChartValueSelectedListener {
 
     public static final String EXTRA_AIR_HUMIDITY_VALUE = "EXTRA_AIR_HUMIDITY_VALUE";
 
     private CircularProgressIndicator progressIndicator;
     private TextView textViewHumidityValue;
-    private LineChart historyChart;
+    private ScatterChart historyChart;
     private TextView tvMax, tvMin, tvAvg;
     private List<com.example.project2.db.AirHumidityHistoryEntry> fullHistory = new ArrayList<>();
     private long filterDuration = 24 * 60 * 60 * 1000L; // Mặc định 24 giờ
-    private boolean isConnected = false; // Thêm biến trạng thái kết nối
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,7 +91,7 @@ public class AirHumidityDetailActivity extends AppCompatActivity {
 
         // Lắng nghe dữ liệu thời gian thực từ HumidityDataRepository
         HumidityDataRepository.getInstance(getApplication()).getAirHumidity().observe(this, humidityString -> {
-            if (isConnected && humidityString != null) { // Kiểm tra trạng thái kết nối
+            if (humidityString != null) {
                 try {
                     float humidityValue = Float.parseFloat(humidityString);
                     updateUI(humidityValue);
@@ -102,7 +103,7 @@ public class AirHumidityDetailActivity extends AppCompatActivity {
 
         // Lắng nghe lịch sử dữ liệu để vẽ biểu đồ từ HumidityDataRepository
         HumidityDataRepository.getInstance(getApplication()).getAirHumidityHistory().observe(this, historyEntries -> {
-            if (isConnected && historyEntries != null) { // Kiểm tra trạng thái kết nối
+            if (historyEntries != null) {
                 fullHistory = historyEntries;
                 updateChartWithFilter();
             }
@@ -184,46 +185,60 @@ public class AirHumidityDetailActivity extends AppCompatActivity {
 
         historyChart.getAxisRight().setEnabled(false);
         historyChart.getLegend().setEnabled(false);
-        historyChart.setData(new LineData());
+        historyChart.setData(new ScatterData());
+
+        // Thiết lập MarkerView
+        CustomMarkerView mv = new CustomMarkerView(this, R.layout.marker_view);
+        mv.setUnit("%");
+        mv.setMarkerBackgroundColor(ContextCompat.getColor(this, R.color.air_humidity_blue));
+        mv.setChartView(historyChart);
+        historyChart.setMarker(mv);
+        historyChart.setOnChartValueSelectedListener(this);
     }
 
     private void updateChart(ArrayList<Entry> chartEntries) {
-        LineData data = historyChart.getData();
-        ILineDataSet set = data.getDataSetByIndex(0);
+        ScatterData data = historyChart.getData();
+        IScatterDataSet set = data.getDataSetByIndex(0);
 
         if (set == null) {
             set = createSet();
             data.addDataSet(set);
+        } else {
+            set.clear();
+            for (Entry e : chartEntries) {
+                set.addEntry(e);
+            }
         }
 
-        ((LineDataSet) set).setValues(chartEntries);
         data.notifyDataChanged();
         historyChart.notifyDataSetChanged();
-        historyChart.moveViewToX(data.getEntryCount());
+
+        if (!chartEntries.isEmpty()) {
+            historyChart.moveViewToX(chartEntries.get(chartEntries.size() - 1).getX());
+        }
+        historyChart.getLegend().setEnabled(false);
     }
 
-    private LineDataSet createSet() {
-        LineDataSet set = new LineDataSet(null, "Lịch sử độ ẩm không khí");
-        set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+    private ScatterDataSet createSet() {
+        ScatterDataSet set = new ScatterDataSet(null, "Lịch sử độ ẩm không khí");
         set.setDrawValues(false);
-        set.setDrawCircleHole(false);
-        set.setLineWidth(2f);
-        set.setDrawCircles(false);
-        set.setDrawFilled(true);
 
         int blueColor = ContextCompat.getColor(this, R.color.air_humidity_blue);
         set.setColor(blueColor);
-        set.setCircleColor(blueColor);
 
-        // Tạo gradient màu xanh cho vùng dưới biểu đồ
-        int[] gradientColors = {
-                ContextCompat.getColor(this, R.color.air_humidity_blue),
-                ContextCompat.getColor(this, R.color.air_humidity_blue_dark)
-        };
-        Drawable gradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, gradientColors);
-        set.setFillDrawable(gradient);
+        set.setScatterShape(ScatterChart.ScatterShape.CIRCLE);
+        set.setScatterShapeSize(25f);
+        set.setScatterShapeHoleColor(Color.WHITE);
+        set.setScatterShapeHoleRadius(2f);
+
         return set;
     }
+
+    @Override
+    public void onValueSelected(Entry e, Highlight h) { }
+
+    @Override
+    public void onNothingSelected() { }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {

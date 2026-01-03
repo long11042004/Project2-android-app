@@ -3,10 +3,13 @@ package com.example.project2.activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.graphics.Color;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 
 import com.example.project2.R;
 import com.example.project2.mqtt.MqttCallbackListener;
@@ -26,6 +29,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
     private Button btnDetailSoil;
     private Button btnDetailPump;
     private String currentTemperatureValue = null;
+    private CardView cvPumpStatusDot;
     private String currentAirHumidityValue = null;
     private String currentSoilMoistureValue = null; // Lưu giá trị độ ẩm thô
     private String currentPumpStatus = null;
@@ -47,6 +51,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
         btnDetailHumidity = findViewById(R.id.btnDetailHumidity);
         btnDetailSoil = findViewById(R.id.btnDetailSoil);
         btnDetailPump = findViewById(R.id.btnDetailPump);
+        cvPumpStatusDot = findViewById(R.id.cvPumpStatusDot);
         // Khởi tạo và kết nối MQTT
         mqttHandler = new MqttHandler(getApplicationContext(), this);
         mqttHandler.connect();
@@ -135,16 +140,21 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
                 }
             } else if (topic.equals(MqttHandler.TOPIC_PUMP_STATUS)) {
                 currentPumpStatus = message; // Lưu lại trạng thái mới nhất
-                // Dựa vào tin nhắn từ esp8266.cpp
-                // Các trạng thái bật: "THU CONG: DANG BAT", "AUTO: DANG TUOI"
-                boolean isPumpOn = message.contains("DANG BAT") || message.contains("DANG TUOI");
+                String upperStatus = message.toUpperCase();
+                boolean isPumpOn = upperStatus.contains("DANG BAT") || upperStatus.contains("DANG TUOI");
 
-                // Cập nhật văn bản trạng thái
+                String stateDisplay;
+                int dotColor;
+
                 if (isPumpOn) {
-                    textViewPumpStatus.setText(message); // Hiển thị chi tiết (VD: AUTO: DANG TUOI)
+                    stateDisplay = "Đang Bật";
+                    dotColor = ContextCompat.getColor(this, R.color.mint);
                 } else {
-                    textViewPumpStatus.setText(message); // Hiển thị chi tiết (VD: THU CONG: DA TAT)
+                    stateDisplay = "Đã Tắt";
+                    dotColor = ContextCompat.getColor(this, R.color.temperature_red);
                 }
+                textViewPumpStatus.setText(stateDisplay);
+                cvPumpStatusDot.setCardBackgroundColor(dotColor);
 
                 // Lưu lịch sử trạng thái máy bơm
                 PumpDataRepository.getInstance(getApplication()).updatePumpStatus(message);
@@ -159,8 +169,14 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
         runOnUiThread(() -> {
             Toast.makeText(this, statusMessage, Toast.LENGTH_SHORT).show();
             if (!connected) {
-                // Khi mất kết nối, vô hiệu hóa switch và đặt lại trạng thái là "chưa rõ"
+                // Khi mất kết nối, đặt lại trạng thái là "chưa rõ" cho tất cả các cảm biến
+                textViewTemperature.setText(R.string.temperature_default);
+                textViewAirHumidity.setText(R.string.air_humidity_default);
+                textViewSoilMoisture.setText(R.string.soil_moisture_default);
                 textViewPumpStatus.setText(R.string.pump_status_unknown);
+                if (cvPumpStatusDot != null) {
+                    cvPumpStatusDot.setCardBackgroundColor(Color.parseColor("#9E9E9E")); // Màu xám
+                }
             }
         });
     }

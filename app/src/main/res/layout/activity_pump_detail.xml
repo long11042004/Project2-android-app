@@ -89,24 +89,24 @@
             </androidx.cardview.widget.CardView>
 
             <TextView
-                android:id="@+id/textViewPumpStatusDetail"
+                android:id="@+id/textViewPumpMode"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:text="@string/status_updating"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:textColor="@color/black"
-                android:textAlignment="center"/>
+                android:textSize="18sp"
+                android:textColor="#424242"
+                android:textAlignment="center"
+                tools:text="Chế độ: Đang cập nhật"/>
 
             <TextView
-                android:id="@+id/textViewPumpLabel"
+                android:id="@+id/textViewPumpState"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/pump_status_label"
-                android:textSize="14sp"
-                android:textColor="#757575"/>
+                android:textSize="22sp"
+                android:textStyle="bold"
+                tools:text="Trạng thái: --"
+                android:textColor="@color/black"/>
 
             <View
                 android:layout_width="match_parent"
