@@ -33,6 +33,8 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
     private String currentAirHumidityValue = null;
     private String currentSoilMoistureValue = null; // Lưu giá trị độ ẩm thô
     private String currentPumpStatus = null;
+    private TextView tvMqttStatus;
+    private CardView cvMqttStatusDot;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +54,8 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
         btnDetailSoil = findViewById(R.id.btnDetailSoil);
         btnDetailPump = findViewById(R.id.btnDetailPump);
         cvPumpStatusDot = findViewById(R.id.cvPumpStatusDot);
+        tvMqttStatus = findViewById(R.id.tvMqttStatus);
+        cvMqttStatusDot = findViewById(R.id.cvMqttStatusDot);
         // Khởi tạo và kết nối MQTT
         mqttHandler = new MqttHandler(getApplicationContext(), this);
         mqttHandler.connect();
@@ -86,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
         btnDetailPump.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, PumpDetailActivity.class);
             if (currentPumpStatus != null) {
-                intent.putExtra("pump_status", currentPumpStatus);
+                intent.putExtra(PumpDetailActivity.EXTRA_PUMP_STATUS, currentPumpStatus);
             }
             startActivity(intent);
         });
@@ -168,6 +172,15 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
         // Hiển thị trạng thái kết nối cho người dùng
         runOnUiThread(() -> {
             Toast.makeText(this, statusMessage, Toast.LENGTH_SHORT).show();
+            if (connected) {
+                tvMqttStatus.setText("Đã kết nối");
+                tvMqttStatus.setTextColor(ContextCompat.getColor(this, R.color.mint));
+                cvMqttStatusDot.setCardBackgroundColor(ContextCompat.getColor(this, R.color.mint));
+            } else {
+                tvMqttStatus.setText("Mất kết nối");
+                tvMqttStatus.setTextColor(Color.GRAY);
+                cvMqttStatusDot.setCardBackgroundColor(Color.GRAY);
+            }
             if (!connected) {
                 // Khi mất kết nối, đặt lại trạng thái là "chưa rõ" cho tất cả các cảm biến
                 textViewTemperature.setText(R.string.temperature_default);

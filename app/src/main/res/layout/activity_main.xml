@@ -8,6 +8,48 @@
     android:fitsSystemWindows="true"
     tools:context=".activity.MainActivity">
 
+    <!-- MQTT Connection Status -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Trạng thái Kết nối"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvMqttStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Offline"
+                android:textStyle="bold"
+                android:textColor="#757575"
+                android:layout_marginEnd="8dp"/>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cvMqttStatusDot"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                app:cardBackgroundColor="#9E9E9E"
+                app:cardCornerRadius="6dp"
+                app:cardElevation="0dp" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
     <androidx.gridlayout.widget.GridLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"

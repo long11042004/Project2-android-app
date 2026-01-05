@@ -108,6 +108,15 @@
                 tools:text="Trạng thái: --"
                 android:textColor="@color/black"/>
 
+            <TextView
+                android:id="@+id/textViewLastUpdated"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textSize="12sp"
+                android:textColor="#757575"
+                tools:text="Cập nhật: 10:30:00"/>
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"

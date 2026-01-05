@@ -22,6 +22,9 @@ import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +33,7 @@ public class PumpDetailActivity extends AppCompatActivity implements MqttCallbac
     public static final String EXTRA_PUMP_STATUS = "EXTRA_PUMP_STATUS";
     private TextView textViewPumpMode;
     private TextView textViewPumpState;
+    private TextView textViewLastUpdated;
     private static final String TOPIC_COMMAND = "vuon/may_bom/lenh";
     private static final String TOPIC_STATUS = "vuon/may_bom";
     private MqttHandler mqttHandler;
@@ -55,6 +59,7 @@ public class PumpDetailActivity extends AppCompatActivity implements MqttCallbac
 
         textViewPumpMode = findViewById(R.id.textViewPumpMode);
         textViewPumpState = findViewById(R.id.textViewPumpState);
+        textViewLastUpdated = findViewById(R.id.textViewLastUpdated);
         cvStatusDot = findViewById(R.id.cvStatusDot);
         tvConnectionStatus = findViewById(R.id.tvConnectionStatus);
         pieChart = findViewById(R.id.pieChartPump);
@@ -66,6 +71,8 @@ public class PumpDetailActivity extends AppCompatActivity implements MqttCallbac
         if (intent != null && intent.hasExtra(EXTRA_PUMP_STATUS)) {
             String status = intent.getStringExtra(EXTRA_PUMP_STATUS);
             updatePumpStatusUI(status);
+        } else {
+            updatePumpStatusUI(null);
         }
 
         // 2. Xử lý sự kiện click nút
@@ -122,69 +129,85 @@ public class PumpDetailActivity extends AppCompatActivity implements MqttCallbac
 
     private void updatePumpStatusUI(String status) {
         if (status == null) {
-            textViewPumpMode.setText("Chế độ: Đang cập nhật");
-            textViewPumpState.setText("Trạng thái: --");
+            textViewPumpMode.setText("Chế độ: Đang cập nhật...");
+            textViewPumpState.setText("Trạng thái: Đang cập nhật...");
+            textViewPumpState.setTextColor(Color.GRAY);
+            if (textViewLastUpdated != null) textViewLastUpdated.setText("");
             return;
         }
 
         String modeDisplay = "Chế độ: --";
         String stateDisplay = "Trạng thái: --";
         int stateColor = Color.BLACK; // Màu mặc định
+        boolean isAutoMode = false;
 
         String upperStatus = status.toUpperCase();
-        String[] parts = upperStatus.split(":");
-
-        String mode = "";
-        String state = "";
-
-        if (parts.length > 0) {
-            mode = parts[0].trim();
-        }
-        if (parts.length > 1) {
-            state = parts[1].trim();
-        } else {
-            // Xử lý trường hợp không có dấu hai chấm, coi toàn bộ là trạng thái
-            state = upperStatus;
-        }
-
-        // 1. Xác định chuỗi hiển thị cho Chế độ
-        if (mode.equals("AUTO")) {
+        
+        // Xử lý các trường hợp đặc biệt không theo định dạng MODE:STATE
+        if (upperStatus.contains("DA BAT CHE DO TU DONG")) {
             modeDisplay = "Chế độ: Tự động";
-        } else if (mode.equals("THU CONG") || mode.equals("MANUAL")) {
-            modeDisplay = "Chế độ: Thủ công";
-        }
-
-        // 2. Xác định chuỗi hiển thị và màu sắc cho Trạng thái
-        boolean isPumpOn = state.contains("DANG BAT") || state.contains("DANG TUOI");
-
-        if (state.contains("DANG TUOI")) {
-            stateDisplay = "Trạng thái: Đang tưới";
-        } else if (state.contains("DANG BAT")) {
-            stateDisplay = "Trạng thái: Đang bật";
-        } else if (state.contains("DA TAT")) {
-            stateDisplay = "Trạng thái: Đã tắt";
-        } else if (state.contains("DAT DU AM")) {
-            stateDisplay = "Trạng thái: Đất đủ ẩm";
+            stateDisplay = "Trạng thái: Đã kích hoạt";
+            stateColor = Color.parseColor("#2196F3"); // Xanh dương
+            isAutoMode = true;
+        } else if (upperStatus.contains("HE THONG ONLINE")) {
+            stateDisplay = "Trạng thái: Hệ thống Online";
+            stateColor = Color.parseColor("#2196F3");
+            isAutoMode = true; // Mặc định ESP khởi động là Auto
         } else {
-            // Dự phòng cho các trạng thái không xác định
-            stateDisplay = "Trạng thái: " + (parts.length > 1 ? parts[1].trim() : status);
+            // Xử lý định dạng chuẩn MODE:STATE
+            String[] parts = upperStatus.split(":");
+            String mode = "";
+            String state = "";
+
+            if (parts.length > 0) mode = parts[0].trim();
+            if (parts.length > 1) state = parts[1].trim();
+            else state = upperStatus;
+
+            // 1. Xác định chuỗi hiển thị cho Chế độ
+            if (mode.equals("AUTO")) {
+                modeDisplay = "Chế độ: Tự động";
+                isAutoMode = true;
+            } else if (mode.equals("THU CONG") || mode.equals("MANUAL")) {
+                modeDisplay = "Chế độ: Thủ công";
+                isAutoMode = false;
+            }
+
+            // 2. Xác định chuỗi hiển thị và màu sắc cho Trạng thái
+            if (state.contains("DANG TUOI")) {
+                stateDisplay = "Trạng thái: Đang tưới";
+                stateColor = Color.parseColor("#4CAF50"); // Xanh lá
+            } else if (state.contains("DANG BAT")) {
+                stateDisplay = "Trạng thái: Đang bật";
+                stateColor = Color.parseColor("#4CAF50");
+            } else if (state.contains("DA TAT")) {
+                stateDisplay = "Trạng thái: Đã tắt";
+                stateColor = Color.parseColor("#F44336"); // Đỏ
+            } else if (state.contains("DAT DU AM")) {
+                stateDisplay = "Trạng thái: Đất đủ ẩm (Tắt)";
+                stateColor = Color.parseColor("#F44336");
+            } else if (state.contains("MUA") || state.contains("KHONG TUOI")) {
+                stateDisplay = "Trạng thái: Trời mưa (Tắt)";
+                stateColor = Color.parseColor("#F44336");
+            } else {
+                stateDisplay = "Trạng thái: " + (parts.length > 1 ? parts[1].trim() : status);
+            }
         }
 
-        if (isPumpOn) {
-            stateColor = Color.parseColor("#4CAF50"); // Màu xanh lá
-        } else {
-            stateColor = Color.parseColor("#F44336"); // Màu đỏ
-        }
+        boolean isPumpOn = upperStatus.contains("DANG BAT") || upperStatus.contains("DANG TUOI");
 
         // 3. Cập nhật giao diện
         textViewPumpMode.setText(modeDisplay);
         textViewPumpState.setText(stateDisplay);
         textViewPumpState.setTextColor(stateColor);
 
+        // Cập nhật thời gian
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss dd/MM/yyyy", Locale.getDefault());
+        textViewLastUpdated.setText("Cập nhật: " + sdf.format(new Date()));
+
         // 4. Cập nhật các công tắc (Switch)
         if (switchAuto != null && switchManual != null) {
             isProgrammaticChange = true;
-            switchAuto.setChecked(mode.equals("AUTO"));
+            switchAuto.setChecked(isAutoMode);
             switchManual.setChecked(isPumpOn);
             isProgrammaticChange = false;
         }

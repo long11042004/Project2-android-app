@@ -28,45 +28,43 @@
                 android:layout_height="wrap_content"
                 android:padding="24dp">
 
-                <com.google.android.material.progressindicator.CircularProgressIndicator
-                    android:id="@+id/progressIndicatorTemperature"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:progress="0"
-                    app:indicatorColor="@color/temperature_red"
-                    app:indicatorSize="200dp"
-                    app:trackColor="#FFEBEE"
-                    app:trackCornerRadius="8dp"
-                    app:trackThickness="16dp"
+                <com.example.project2.view.ThermometerView
+                    android:id="@+id/thermometerView"
+                    android:layout_width="150dp"
+                    android:layout_height="200dp"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    tools:progress="28" />
+                    app:layout_constraintBottom_toBottomOf="parent" />
 
-                <TextView
-                    android:id="@+id/textViewCurrentTemperatureDetail"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/temperature_red"
-                    android:textSize="40sp"
-                    android:textStyle="bold"
-                    app:layout_constraintBottom_toBottomOf="@id/progressIndicatorTemperature"
-                    app:layout_constraintEnd_toEndOf="@id/progressIndicatorTemperature"
-                    app:layout_constraintStart_toStartOf="@id/progressIndicatorTemperature"
-                    app:layout_constraintTop_toTopOf="@id/progressIndicatorTemperature"
-                    tools:text="28.5°C" />
-
-                <TextView
-                    android:id="@+id/textViewTemperatureTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="@string/temperature"
-                    android:textSize="18sp"
-                    android:textColor="#757575"
+                    android:orientation="vertical"
+                    app:layout_constraintStart_toEndOf="@id/thermometerView"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/progressIndicatorTemperature" />
+                    app:layout_constraintTop_toTopOf="@id/thermometerView"
+                    app:layout_constraintBottom_toBottomOf="@id/thermometerView">
+
+                    <TextView
+                        android:id="@+id/textViewCurrentTemperatureDetail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/temperature_red"
+                        android:textSize="40sp"
+                        android:textStyle="bold"
+                        android:layout_marginStart="16dp"
+                        tools:text="28.5°C" />
+
+                    <TextView
+                        android:id="@+id/textViewTemperatureTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/temperature"
+                        android:layout_marginStart="16dp"
+                        android:textSize="18sp"
+                        android:textColor="#757575" />
+                </LinearLayout>
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.cardview.widget.CardView>
@@ -85,46 +83,38 @@
                 android:orientation="vertical"
                 android:padding="24dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/chart_history"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#424242"
-                    android:layout_marginBottom="16dp"/>
-
                 <LinearLayout
-                    android:id="@+id/layoutTimeFilter"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center_horizontal"
-                    android:layout_marginBottom="16dp">
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
 
-                    <Button
-                        android:id="@+id/btn1Hour"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/time_1h"
-                        android:textColor="@color/temperature_red"
-                        app:strokeColor="@color/temperature_red" />
+                        android:text="@string/chart_history"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#424242"/>
 
-                    <Button
-                        android:id="@+id/btn24Hours"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
+                    <ImageButton
+                        android:id="@+id/btnRefresh"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/time_24h"
-                        android:textColor="@color/temperature_red"
-                        app:strokeColor="@color/temperature_red" />
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@android:drawable/ic_popup_sync"
+                        android:contentDescription="Refresh"
+                        android:padding="8dp"/>
                 </LinearLayout>
 
+                <Spinner
+                    android:id="@+id/spinnerTimeFilter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:entries="@array/time_filter_options" />
                 <LinearLayout
                     android:id="@+id/layoutStats"
                     android:layout_width="match_parent"
@@ -166,8 +156,8 @@
                         android:textColor="@color/temperature_red"/>
                 </LinearLayout>
 
-                <com.github.mikephil.charting.charts.ScatterChart
-                    android:id="@+id/barChartTemperatureHistory"
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/lineChartTemperatureHistory"
                     android:layout_width="match_parent"
                     android:layout_height="250dp" />
 

@@ -85,46 +85,38 @@
                 android:orientation="vertical"
                 android:padding="24dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/chart_history"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#424242"
-                    android:layout_marginBottom="16dp"/>
-
                 <LinearLayout
-                    android:id="@+id/layoutTimeFilter"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center_horizontal"
-                    android:layout_marginBottom="16dp">
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
 
-                    <Button
-                        android:id="@+id/btn1Hour"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/time_1h"
-                        android:textColor="@color/brown"
-                        app:strokeColor="@color/brown" />
+                        android:text="@string/chart_history"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#424242"/>
 
-                    <Button
-                        android:id="@+id/btn24Hours"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
+                    <ImageButton
+                        android:id="@+id/btnRefresh"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/time_24h"
-                        android:textColor="@color/brown"
-                        app:strokeColor="@color/brown" />
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@android:drawable/ic_popup_sync"
+                        android:contentDescription="Refresh"
+                        android:padding="8dp"/>
                 </LinearLayout>
 
+                <Spinner
+                    android:id="@+id/spinnerTimeFilter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:entries="@array/time_filter_options" />
                 <LinearLayout
                     android:id="@+id/layoutStats"
                     android:layout_width="match_parent"
@@ -166,7 +158,7 @@
                         android:textColor="@color/brown"/>
                 </LinearLayout>
 
-                <com.github.mikephil.charting.charts.ScatterChart
+                <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/lineChartSoilMoistureHistory"
                     android:layout_width="match_parent"
                     android:layout_height="250dp" />
