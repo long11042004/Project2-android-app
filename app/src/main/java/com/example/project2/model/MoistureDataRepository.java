@@ -16,13 +16,12 @@ public class MoistureDataRepository {
     private static volatile MoistureDataRepository instance;
     private final MutableLiveData<String> soilMoisture = new MutableLiveData<>();
     private final MoistureHistoryDao moistureHistoryDao;
-    private final LiveData<List<MoistureHistoryEntry>> allHistory;
+    private final MutableLiveData<List<MoistureHistoryEntry>> moistureHistory = new MutableLiveData<>();
     private final ExecutorService databaseWriteExecutor = Executors.newSingleThreadExecutor();
 
     private MoistureDataRepository(Application application) {
         AppDatabase db = AppDatabase.getDatabase(application);
         moistureHistoryDao = db.moistureHistoryDao();
-        allHistory = moistureHistoryDao.getAllHistory();
     }
 
     public static MoistureDataRepository getInstance(Application application) {
@@ -39,7 +38,15 @@ public class MoistureDataRepository {
     public LiveData<String> getSoilMoisture() {
         return soilMoisture;
     }
-    public LiveData<List<MoistureHistoryEntry>> getFullHistory() { return allHistory; }
+    public LiveData<List<MoistureHistoryEntry>> getMoistureHistory() {
+        return moistureHistory;
+    }
+
+    public void fetchHistoryInRange(long startTime, long endTime) {
+        databaseWriteExecutor.execute(() -> {
+            moistureHistory.postValue(moistureHistoryDao.getHistoryInRange(startTime, endTime));
+        });
+    }
 
     public void updateSoilMoisture(String newValue) {
         soilMoisture.postValue(newValue);

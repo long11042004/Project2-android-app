@@ -1,13 +1,13 @@
 package com.example.project2.activity;
 
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.view.MenuItem;
-import android.widget.AdapterView;
 import android.widget.TextView;
-import android.widget.Spinner;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,6 +28,7 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
+import java.util.Calendar;
 import java.util.ArrayList;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -42,9 +43,8 @@ public class SoilMoistureDetailActivity extends AppCompatActivity implements OnC
     private TextView textViewMoistureValue;
     private LineChart historyChart;
     private TextView tvMax, tvMin, tvAvg;
-    private Spinner spinnerTimeFilter;
-    private List<com.example.project2.db.MoistureHistoryEntry> fullHistory = new ArrayList<>();
-    private long filterDuration = 15 * 60 * 1000L; // Mặc định 15 phút
+    private EditText etDateFilter;
+    private Calendar selectedDate = Calendar.getInstance();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,36 +64,25 @@ public class SoilMoistureDetailActivity extends AppCompatActivity implements OnC
         tvMax = findViewById(R.id.tvMaxVal);
         tvMin = findViewById(R.id.tvMinVal);
         tvAvg = findViewById(R.id.tvAvgVal);
-        spinnerTimeFilter = findViewById(R.id.spinnerTimeFilter);
+        etDateFilter = findViewById(R.id.etDateFilter);
         
         ImageButton btnRefresh = findViewById(R.id.btnRefresh);
         btnRefresh.setOnClickListener(v -> {
             updateChartWithFilter();
         });
 
-        // Đặt giá trị mặc định cho Spinner là "15 phút" (vị trí 1)
-        spinnerTimeFilter.setSelection(1);
-
-        spinnerTimeFilter.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, android.view.View view, int position, long id) {
-                String selectedTime = (String) parent.getItemAtPosition(position);
-                switch (selectedTime) {
-                    case "5 phút": filterDuration = 5 * 60 * 1000L; break;
-                    case "15 phút": filterDuration = 15 * 60 * 1000L; break;
-                    case "30 phút": filterDuration = 30 * 60 * 1000L; break;
-                    case "1 giờ": filterDuration = 60 * 60 * 1000L; break;
-                    case "12 giờ": filterDuration = 12 * 60 * 60 * 1000L; break;
-                    case "1 ngày": filterDuration = 24 * 60 * 60 * 1000L; break;
-                    case "7 ngày": filterDuration = 7 * 24 * 60 * 60 * 1000L; break;
-                    default: filterDuration = 15 * 60 * 1000L; break;
-                }
-                updateChartWithFilter();
-                historyChart.fitScreen(); // Reset zoom và scroll khi thay đổi bộ lọc
-            }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) { }
+        ImageButton btnZoomIn = findViewById(R.id.btnZoomIn);
+        btnZoomIn.setOnClickListener(v -> {
+            historyChart.zoom(1.4f, 1f, historyChart.getCenterOfView().x, historyChart.getCenterOfView().y);
         });
+
+        ImageButton btnZoomOut = findViewById(R.id.btnZoomOut);
+        btnZoomOut.setOnClickListener(v -> {
+            historyChart.zoom(0.7f, 1f, historyChart.getCenterOfView().x, historyChart.getCenterOfView().y);
+        });
+
+        updateDateEditText();
+        etDateFilter.setOnClickListener(v -> showDatePicker());
         
         setupChart();
 
@@ -123,35 +112,79 @@ public class SoilMoistureDetailActivity extends AppCompatActivity implements OnC
         });
 
         // Lắng nghe toàn bộ lịch sử (bao gồm cả cập nhật mới) để vẽ biểu đồ
-        MoistureDataRepository.getInstance(getApplication()).getFullHistory().observe(this, historyEntries -> {
-            if (historyEntries != null) {
-                fullHistory = historyEntries;
-                updateChartWithFilter();
-            }
+        MoistureDataRepository.getInstance(getApplication()).getMoistureHistory().observe(this, historyEntries -> {
+            populateChart(historyEntries);
         });
+        updateChartWithFilter(); // Lấy dữ liệu ban đầu cho ngày hôm nay
+    }
+
+    private void showDatePicker() {
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                this,
+                (view, year, month, dayOfMonth) -> {
+                    selectedDate.set(Calendar.YEAR, year);
+                    selectedDate.set(Calendar.MONTH, month);
+                    selectedDate.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                    updateDateEditText();
+                    updateChartWithFilter();
+                    historyChart.fitScreen();
+                },
+                selectedDate.get(Calendar.YEAR),
+                selectedDate.get(Calendar.MONTH),
+                selectedDate.get(Calendar.DAY_OF_MONTH)
+        );
+        datePickerDialog.show();
+    }
+
+    private void updateDateEditText() {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        etDateFilter.setText(sdf.format(selectedDate.getTime()));
     }
 
     private void updateChartWithFilter() {
+        // Tính thời gian bắt đầu và kết thúc của ngày được chọn
+        Calendar startCal = (Calendar) selectedDate.clone();
+        startCal.set(Calendar.HOUR_OF_DAY, 0);
+        startCal.set(Calendar.MINUTE, 0);
+        startCal.set(Calendar.SECOND, 0);
+        startCal.set(Calendar.MILLISECOND, 0);
+        long startTime = startCal.getTimeInMillis();
+
+        Calendar endCal = (Calendar) selectedDate.clone();
+        endCal.set(Calendar.HOUR_OF_DAY, 23);
+        endCal.set(Calendar.MINUTE, 59);
+        endCal.set(Calendar.SECOND, 59);
+        endCal.set(Calendar.MILLISECOND, 999);
+        long endTime = endCal.getTimeInMillis();
+
+        // Kích hoạt việc lấy dữ liệu từ repository
+        MoistureDataRepository.getInstance(getApplication()).fetchHistoryInRange(startTime, endTime);
+    }
+
+    private void populateChart(List<com.example.project2.db.MoistureHistoryEntry> history) {
+        if (history == null) return;
+
         ArrayList<Entry> chartEntries = new ArrayList<>();
-        long now = System.currentTimeMillis();
-        long threshold = now - filterDuration;
-        long referenceTimestamp = threshold;
-        
+        Calendar startCal = (Calendar) selectedDate.clone();
+        startCal.set(Calendar.HOUR_OF_DAY, 0);
+        startCal.set(Calendar.MINUTE, 0);
+        startCal.set(Calendar.SECOND, 0);
+        startCal.set(Calendar.MILLISECOND, 0);
+        long startTime = startCal.getTimeInMillis();
+
         float maxVal = -Float.MAX_VALUE;
         float minVal = Float.MAX_VALUE;
         float sumVal = 0;
         int count = 0;
 
-        for (com.example.project2.db.MoistureHistoryEntry dbEntry : fullHistory) {
-            if (dbEntry.timestamp >= threshold) {
-                float val = dbEntry.moistureValue;
-                chartEntries.add(new Entry((float) (dbEntry.timestamp - referenceTimestamp), val));
-                
-                if (val > maxVal) maxVal = val;
-                if (val < minVal) minVal = val;
-                sumVal += val;
-                count++;
-            }
+        for (com.example.project2.db.MoistureHistoryEntry dbEntry : history) {
+            float val = dbEntry.moistureValue;
+            chartEntries.add(new Entry((float) (dbEntry.timestamp - startTime), val));
+
+            if (val > maxVal) maxVal = val;
+            if (val < minVal) minVal = val;
+            sumVal += val;
+            count++;
         }
         
         if (count > 0) {
@@ -168,24 +201,22 @@ public class SoilMoistureDetailActivity extends AppCompatActivity implements OnC
         // Cập nhật định dạng trục X dựa trên khoảng thời gian
         XAxis xAxis = historyChart.getXAxis();
         xAxis.setAxisMinimum(0f);
-        xAxis.setAxisMaximum((float) (now - referenceTimestamp));
-        final String format;
-        if (filterDuration <= 2 * 60 * 60 * 1000L) { // <= 2 giờ: hiển thị giờ:phút:giây
-            format = "HH:mm";
-        } else if (filterDuration <= 24 * 60 * 60 * 1000L) { // <= 1 ngày: hiển thị giờ:phút
-            format = "HH:mm";
-        } else { // > 1 ngày: hiển thị ngày/tháng
-            format = "dd/MM";
-        }
+        xAxis.setAxisMaximum(24 * 60 * 60 * 1000f); // 24 giờ
+        
         xAxis.setValueFormatter(new ValueFormatter() {
-            private final SimpleDateFormat mFormat = new SimpleDateFormat(format, Locale.getDefault());
+            private final SimpleDateFormat mFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
             @Override
             public String getAxisLabel(float value, com.github.mikephil.charting.components.AxisBase axis) {
-                return mFormat.format(new Date((long) value + referenceTimestamp));
+                return mFormat.format(new Date((long) value + startTime));
             }
         });
 
         updateChart(chartEntries);
+        // Giới hạn hiển thị tối đa 4 giờ trên màn hình
+        historyChart.setVisibleXRangeMaximum(4 * 60 * 60 * 1000f);
+        if (!chartEntries.isEmpty()) {
+            historyChart.moveViewToX(chartEntries.get(chartEntries.size() - 1).getX());
+        }
     }
 
     private void updateGauge(Float moistureValue) {

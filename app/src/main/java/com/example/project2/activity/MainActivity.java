@@ -2,10 +2,11 @@ package com.example.project2.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.graphics.Color;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
@@ -15,6 +16,10 @@ import com.example.project2.R;
 import com.example.project2.mqtt.MqttCallbackListener;
 import com.example.project2.model.*;
 import com.example.project2.mqtt.MqttHandler;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements MqttCallbackListener {
 
@@ -35,6 +40,14 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
     private String currentPumpStatus = null;
     private TextView tvMqttStatus;
     private CardView cvMqttStatusDot;
+    private TextView tvLastSeen;
+
+    private Handler timeoutHandler = new Handler(Looper.getMainLooper());
+    private Runnable timeoutRunnable = () -> {
+        tvMqttStatus.setText("Mất tín hiệu");
+        tvMqttStatus.setTextColor(Color.parseColor("#F44336")); // Màu đỏ
+        cvMqttStatusDot.setCardBackgroundColor(Color.parseColor("#F44336"));
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
         cvPumpStatusDot = findViewById(R.id.cvPumpStatusDot);
         tvMqttStatus = findViewById(R.id.tvMqttStatus);
         cvMqttStatusDot = findViewById(R.id.cvMqttStatusDot);
+        tvLastSeen = findViewById(R.id.tvLastSeen);
         // Khởi tạo và kết nối MQTT
         mqttHandler = new MqttHandler(getApplicationContext(), this);
         mqttHandler.connect();
@@ -100,6 +114,20 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
     public void onMessageArrived(String topic, String message) {
         // Cập nhật giao diện trên luồng chính
         runOnUiThread(() -> {
+            // Reset timer đếm ngược timeout (60 giây)
+            timeoutHandler.removeCallbacks(timeoutRunnable);
+            timeoutHandler.postDelayed(timeoutRunnable, 60000);
+
+            // Khi nhận được bất kỳ dữ liệu nào, coi như thiết bị đang Online
+            if (!"Thiết bị Online".equals(tvMqttStatus.getText().toString())) {
+                tvMqttStatus.setText("Thiết bị Online");
+                tvMqttStatus.setTextColor(ContextCompat.getColor(this, R.color.mint));
+                cvMqttStatusDot.setCardBackgroundColor(ContextCompat.getColor(this, R.color.mint));
+            }
+
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+            tvLastSeen.setText("Cập nhật: " + sdf.format(new Date()));
+
             if (topic.equals(MqttHandler.TOPIC_TEMPERATURE)) {
                 try {
                     currentTemperatureValue = message;
@@ -171,15 +199,20 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
     public void onConnectionStatusChanged(boolean connected, String statusMessage) {
         // Hiển thị trạng thái kết nối cho người dùng
         runOnUiThread(() -> {
-            Toast.makeText(this, statusMessage, Toast.LENGTH_SHORT).show();
             if (connected) {
-                tvMqttStatus.setText("Đã kết nối");
-                tvMqttStatus.setTextColor(ContextCompat.getColor(this, R.color.mint));
-                cvMqttStatusDot.setCardBackgroundColor(ContextCompat.getColor(this, R.color.mint));
+                // Đã kết nối Server, nhưng đang chờ thiết bị gửi tin nhắn
+                tvMqttStatus.setText("Chờ dữ liệu...");
+                tvMqttStatus.setTextColor(Color.parseColor("#FF9800")); // Màu cam
+                cvMqttStatusDot.setCardBackgroundColor(Color.parseColor("#FF9800"));
+
+                // Bắt đầu đếm ngược timeout khi vừa kết nối
+                timeoutHandler.removeCallbacks(timeoutRunnable);
+                timeoutHandler.postDelayed(timeoutRunnable, 60000);
             } else {
-                tvMqttStatus.setText("Mất kết nối");
+                tvMqttStatus.setText("Mất kết nối Server");
                 tvMqttStatus.setTextColor(Color.GRAY);
                 cvMqttStatusDot.setCardBackgroundColor(Color.GRAY);
+                timeoutHandler.removeCallbacks(timeoutRunnable);
             }
             if (!connected) {
                 // Khi mất kết nối, đặt lại trạng thái là "chưa rõ" cho tất cả các cảm biến
@@ -197,6 +230,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallbackListe
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        timeoutHandler.removeCallbacks(timeoutRunnable);
         if (mqttHandler != null) {
             mqttHandler.disconnect();
         }

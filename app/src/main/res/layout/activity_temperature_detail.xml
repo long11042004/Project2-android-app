@@ -100,21 +100,48 @@
                         android:textColor="#424242"/>
 
                     <ImageButton
+                        android:id="@+id/btnZoomIn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_zoom_in"
+                        android:contentDescription="Zoom In"
+                        android:padding="8dp"
+                        app:tint="#757575"/>
+
+                    <ImageButton
+                        android:id="@+id/btnZoomOut"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_zoom_out"
+                        android:contentDescription="Zoom Out"
+                        android:padding="8dp"
+                        app:tint="#757575"/>
+
+                    <ImageButton
                         android:id="@+id/btnRefresh"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:src="@android:drawable/ic_popup_sync"
+                        android:src="@drawable/ic_refresh"
                         android:contentDescription="Refresh"
                         android:padding="8dp"/>
                 </LinearLayout>
 
-                <Spinner
-                    android:id="@+id/spinnerTimeFilter"
+                <EditText
+                    android:id="@+id/etDateFilter"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    android:entries="@array/time_filter_options" />
+                    android:focusable="false"
+                    android:clickable="true"
+                    android:inputType="none"
+                    android:hint="Chọn ngày"
+                    android:drawableEnd="@drawable/ic_calendar"
+                    android:drawableTint="@color/temperature_red"
+                    android:drawablePadding="8dp"/>
+
                 <LinearLayout
                     android:id="@+id/layoutStats"
                     android:layout_width="match_parent"

@@ -13,8 +13,8 @@ public interface TemperatureHistoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(TemperatureHistoryEntry entry);
 
-    @Query("SELECT * FROM temperature_history ORDER BY timestamp ASC")
-    LiveData<List<TemperatureHistoryEntry>> getAllHistory();
+    @Query("SELECT * FROM temperature_history WHERE timestamp >= :startTime AND timestamp <= :endTime ORDER BY timestamp ASC")
+    List<TemperatureHistoryEntry> getHistoryInRange(long startTime, long endTime);
 
     @Query("DELETE FROM temperature_history WHERE id NOT IN (SELECT id FROM temperature_history ORDER BY timestamp DESC LIMIT 500)")
     void trimHistory();

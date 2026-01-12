@@ -16,13 +16,12 @@ public class HumidityDataRepository {
     private static volatile HumidityDataRepository instance;
     private final MutableLiveData<String> airHumidity = new MutableLiveData<>();
     private final AirHumidityHistoryDao airHumidityHistoryDao;
-    private final LiveData<List<AirHumidityHistoryEntry>> airHumidityHistory;
+    private final MutableLiveData<List<AirHumidityHistoryEntry>> airHumidityHistory = new MutableLiveData<>();
     private final ExecutorService databaseWriteExecutor = Executors.newSingleThreadExecutor();
 
     private HumidityDataRepository(Application application) {
         AppDatabase db = AppDatabase.getDatabase(application);
         airHumidityHistoryDao = db.airHumidityHistoryDao();
-        airHumidityHistory = airHumidityHistoryDao.getAllHistory();
     }
 
     public static HumidityDataRepository getInstance(Application application) {
@@ -42,6 +41,13 @@ public class HumidityDataRepository {
 
     public LiveData<List<AirHumidityHistoryEntry>> getAirHumidityHistory() {
         return airHumidityHistory;
+    }
+
+    public void fetchHistoryInRange(long startTime, long endTime) {
+        databaseWriteExecutor.execute(() -> {
+            List<AirHumidityHistoryEntry> history = airHumidityHistoryDao.getHistoryInRange(startTime, endTime);
+            airHumidityHistory.postValue(history);
+        });
     }
 
     public void updateAirHumidity(String newValue) {

@@ -45,8 +45,8 @@ public class PumpDataRepository {
 
         databaseWriteExecutor.execute(() -> {
             pumpHistoryDao.insert(new PumpHistoryEntry(System.currentTimeMillis(), status));
-            // Xóa dữ liệu cũ hơn 7 ngày
-            pumpHistoryDao.deleteOldHistory(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L);
+            // Đã vô hiệu hóa việc tự động xóa dữ liệu cũ hơn 7 ngày.
+            // pumpHistoryDao.deleteOldHistory(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L);
         });
     }
 }
